@@ -40,7 +40,7 @@ float norm_rand()
 
 void load_resources (Texture2D** textures, int* texture_count)
 {
-    *texture_count = 2;
+    *texture_count = 3;
     *textures = malloc(sizeof(Texture2D) * (*texture_count));
 
     (*textures)[0] = LoadTexture("assets/uncle.png");
@@ -67,7 +67,6 @@ void draw_tiled_background(Texture2D* textures, tiling_layout_t layout)
             DrawTexture(textures[id], x_pos, y_pos, WHITE);
         }
     }
-
 }
 
 int main(void)
@@ -76,13 +75,26 @@ int main(void)
     int screen_h = 480;
 
     Vector2 player_pos = { .x = screen_w * 0.5f, .y = screen_h * 0.5f };
-    const int entity_count = 30;
+    const int entity_count = 300;
     Vector2* positions = malloc(sizeof(Vector2) * entity_count);
-    float tree_rand_radius = 100;
     time_t t;
     srand((unsigned) time(&t));
-    for (int i = 0; i < 30; i++)
-        positions[i] = (Vector2){ .x = (int)player_pos.x + 2 * (norm_rand() - 0.5) * tree_rand_radius, .y = (int)player_pos.y + 2 *(norm_rand() - 0.5) * tree_rand_radius};
+    int success = 0;
+    for (int y = 0; y < 50; y++)
+    {
+        for (int x = 0; x < 50; x++)
+        {
+            if (norm_rand() > 0.9)
+            {
+                positions[success] = (Vector2){.x = 32 * x, .y = 32 * y}; 
+                success++;
+            }
+            if (success == entity_count)
+                break;
+        }
+        if (success == entity_count)
+                break;
+    }
 
     const char* title = "HERO FORESTER!!!";
     
@@ -91,7 +103,7 @@ int main(void)
         .offset = player_pos,
         .target = player_pos,
         .rotation = 0.0f,
-        .zoom = 3.0f
+        .zoom = 2.0f
     };
 
     tiling_layout_t layout = create_tiling_layout(50, 50);
@@ -120,8 +132,8 @@ int main(void)
             camera.target = player_pos;
             BeginMode2D(camera);
             draw_tiled_background(tiling_textures, layout);
-            DrawTexture(textures[0], (int)player_pos.x, (int)player_pos.y, WHITE);
-            for (int i = 0; i < entity_count; i++)
+            DrawTextureEx(textures[0], player_pos, 0, 1, WHITE);
+            for (int i = 0; i < success; i++)
                 DrawTexture(textures[1], (int)positions[i].x, (int)positions[i].y, WHITE);
             EndMode2D();
         }
