@@ -1,9 +1,13 @@
 #include <raylib.h>
+#include <raymath.h>
 #include <rlgl.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
 #include <string.h>
+
+
+#define TSIZE 32
 
 typedef struct tiling_layout_t
 {
@@ -11,6 +15,13 @@ typedef struct tiling_layout_t
     int width;
     int height;
 } tiling_layout_t;
+
+typedef struct bullet_effect_t
+{
+    Vector2 start;
+    Vector2 end;
+    float interpolator;
+} bullet_effect_t;
 
 int get_tiling_layout_cell(tiling_layout_t* layout, int x, int y)
 {
@@ -26,7 +37,37 @@ tiling_layout_t create_tiling_layout(int width, int height)
     return l;
 }
 
+Vector2 get_cell_pos(Vector2 world_pos)
+{
+    return (Vector2)
+    {
+        .x = (int)world_pos.x / TSIZE - (world_pos.x < 0 ? 1 : 0),
+        .y = (int)world_pos.y / TSIZE - (world_pos.y < 0 ? 1 : 0) 
+    };
+}
 
+Vector2 get_cell_pos_under_cursor(Camera2D camera)
+{
+    return get_cell_pos(GetScreenToWorld2D(GetMousePosition(), camera));
+}
+
+void draw_map_cursor(Vector2 cell_pos)
+{
+    Rectangle rect = 
+    {
+        .x = cell_pos.x * TSIZE,
+        .y = cell_pos.y * TSIZE,
+        .height = TSIZE,
+        .width = TSIZE
+    };
+    DrawRectangleRec(rect, (Color){ .r = 200, .g = 0, .b = 0, .a = 100 });
+}
+
+void draw_bullet_effect(bullet_effect_t * effect, Texture2D bullet_texture)
+{
+    Vector2 pos = Vector2Lerp(effect->start, effect->end, effect->interpolator);
+    DrawTextureV(bullet_texture, pos, WHITE);
+}
 
 void free_tiling_layout(tiling_layout_t layout)
 {
@@ -40,12 +81,21 @@ float norm_rand()
 
 void load_resources (Texture2D** textures, int* texture_count)
 {
-    *texture_count = 3;
+    *texture_count = 5;
     *textures = malloc(sizeof(Texture2D) * (*texture_count));
 
-    (*textures)[0] = LoadTexture("assets/uncle.png");
+    Image img_right = LoadImage("assets/uncle2.png");
+    Image img_left  = ImageCopy(img_right);
+    ImageFlipHorizontal(&img_left);
+
+    (*textures)[0] = LoadTextureFromImage(img_right);
     (*textures)[1] = LoadTexture("assets/tree.png");
     (*textures)[2] = LoadTexture("assets/grass.png");
+    (*textures)[3] = LoadTextureFromImage(img_left);
+    (*textures)[4] = LoadTexture("assets/bullet.png");
+
+    UnloadImage(img_right);
+    UnloadImage(img_left);
 }
 
 void unload_resources (Texture2D* textures, int texture_count)
@@ -62,8 +112,8 @@ void draw_tiled_background(Texture2D* textures, tiling_layout_t layout)
         for (int y = 0; y < layout.height; y++)
         {
             int id = get_tiling_layout_cell(&layout, x, y);
-            int x_pos = x * 32;
-            int y_pos = y * 32;
+            int x_pos = x * TSIZE;
+            int y_pos = y * TSIZE;
             DrawTexture(textures[id], x_pos, y_pos, WHITE);
         }
     }
@@ -74,8 +124,9 @@ int main(void)
     int screen_w = 640;
     int screen_h = 480;
 
-    Vector2 player_pos = { .x = screen_w * 0.5f, .y = screen_h * 0.5f };
-    const int entity_count = 300;
+    int player_tex_id = 0;
+    Vector2 player_pos = { .x = TSIZE * 8, .y = TSIZE * 8 };
+    const int entity_count = 1500;
     Vector2* positions = malloc(sizeof(Vector2) * entity_count);
     time_t t;
     srand((unsigned) time(&t));
@@ -84,9 +135,9 @@ int main(void)
     {
         for (int x = 0; x < 50; x++)
         {
-            if (norm_rand() > 0.9)
+            if (norm_rand() > 0.5)
             {
-                positions[success] = (Vector2){.x = 32 * x, .y = 32 * y}; 
+                positions[success] = (Vector2){.x = TSIZE * x, .y = TSIZE * y}; 
                 success++;
             }
             if (success == entity_count)
@@ -120,11 +171,22 @@ int main(void)
 
     SetTargetFPS(60);
     while(!WindowShouldClose())
-    {
-        if (IsKeyDown(KEY_LEFT))    player_pos.x -= 1.0f;
-        if (IsKeyDown(KEY_RIGHT))   player_pos.x += 1.0f;
-        if (IsKeyDown(KEY_UP))      player_pos.y -= 1.0f;
-        if (IsKeyDown(KEY_DOWN))    player_pos.y += 1.0f;
+    { 
+        Vector2 cursor_cell_pos = get_cell_pos_under_cursor(camera);
+        Vector2 player_cell_pos = get_cell_pos(player_pos);
+
+        if (IsKeyPressed(KEY_LEFT))
+        {
+            player_tex_id = 3;
+            player_pos.x -= 1.0f * TSIZE;
+        }
+        if (IsKeyPressed(KEY_RIGHT))
+        {
+            player_tex_id = 0;
+            player_pos.x += 1.0f * TSIZE;
+        }
+        if (IsKeyPressed(KEY_UP))      player_pos.y -= 1.0f * TSIZE;
+        if (IsKeyPressed(KEY_DOWN))    player_pos.y += 1.0f * TSIZE;
 
         BeginDrawing();
         ClearBackground((Color){ .r = 0, .g = 100, .b = 0, .a = 255 });
@@ -132,9 +194,10 @@ int main(void)
             camera.target = player_pos;
             BeginMode2D(camera);
             draw_tiled_background(tiling_textures, layout);
-            DrawTextureEx(textures[0], player_pos, 0, 1, WHITE);
+            DrawTextureEx(textures[player_tex_id], player_pos, 0, 1, WHITE);
             for (int i = 0; i < success; i++)
                 DrawTexture(textures[1], (int)positions[i].x, (int)positions[i].y, WHITE);
+            draw_map_cursor(cursor_cell_pos);
             EndMode2D();
         }
         DrawText(title, 10, 10, 20, WHITE);
