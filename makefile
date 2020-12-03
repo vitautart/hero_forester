@@ -1,4 +1,4 @@
-.PHONY: all external
+.PHONY: all external tests
 
 ifeq ($(OS),Windows_NT)
 	PLATFORM_OS = WINDOWS
@@ -38,4 +38,6 @@ external:
 external_clean:
 	cd external/raylib/src && $(MAKE) clean
 
-
+tests:
+	gcc src/tests.c -o build/tests
+	./build/tests

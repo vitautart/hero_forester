@@ -1,0 +1,24 @@
+1. SETTING
+
+Modern times, forest.
+
+2. ENEMY TYPES
+
+- Outlaw lumberjacks with chainsaw.
+- Poachers with riffles.
+
+3. FEATURES
+
+- No regeneration of life.
+- Experience system. (progression through findings and battles)
+- Leveling system (forester style)
+- Player has ability to hear. (progressible through experience)
+- Player has ability to pathfinding. (progressible through experience)
+- Health (progressible through experience)
+
+
+4. MAPS
+
+- One global map
+- Each hub on global map is local map.
+- Random generated maps or manualy designed?
