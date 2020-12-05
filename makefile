@@ -39,5 +39,5 @@ external_clean:
 	cd external/raylib/src && $(MAKE) clean
 
 tests:
-	gcc src/tests.c -o build/tests
+	$(CC) src/tests.c -o build/tests
 	./build/tests

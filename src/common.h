@@ -5,45 +5,46 @@
 #include <malloc.h>
 #include <assert.h>
 
+#define BITSET_CELL_BITCOUNT 32
+#define BITSET_CELL_BYTECOUNT 4
+
 typedef struct bitset_t
 {
-    uint32_t *data;
-    int data_size; 
-    int elem_count;
-    int elem_size_in_bits;
+    uint32_t *cells;
+    int cellcount; 
+    int bitcount;
+    int bytecount;
 } bitset_t;
 
-bitset_t bitset_allocate(int elem_count)
+bitset_t bitset_allocate(int bitcount)
 {
     bitset_t set;
-    int size_in_bytes = sizeof *set.data;
-    set.elem_size_in_bits = size_in_bytes * 8;
-
-    set.data_size =  elem_count / set.elem_size_in_bits 
-        + ((elem_count % set.elem_size_in_bits) != 0)* 1;
-    set.data = calloc(set.data_size, size_in_bytes);
-    set.elem_count = elem_count;
+    set.cellcount =  bitcount / BITSET_CELL_BITCOUNT 
+        + ((bitcount % BITSET_CELL_BITCOUNT) != 0)* 1;
+    set.bytecount = set.cellcount * BITSET_CELL_BYTECOUNT;
+    set.cells = malloc(set.bytecount);
+    set.bitcount = bitcount;
     return set;
 }
 
 void bitset_set(bitset_t* set, int idx, int value)
 {
     value = value != 0;
-    int data_idx = idx / set->elem_size_in_bits;
-    int bit_pos = idx % set->elem_size_in_bits;
-    set->data[data_idx] = (set->data[data_idx] & ~(1 << bit_pos)) | (value << bit_pos);
+    int data_idx = idx / BITSET_CELL_BITCOUNT;
+    int bit_pos = idx % BITSET_CELL_BITCOUNT;
+    set->cells[data_idx] = (set->cells[data_idx] & ~(1 << bit_pos)) | (value << bit_pos);
 }
 
 int bitset_get(const bitset_t* set, int idx)
 {
-    int data_idx = idx / set->elem_size_in_bits;
-    int bit_pos = idx % set->elem_size_in_bits;
-    return (set->data[data_idx] & (1 << bit_pos)) != 0;
+    int data_idx = idx / BITSET_CELL_BITCOUNT;
+    int bit_pos = idx % BITSET_CELL_BITCOUNT;
+    return (set->cells[data_idx] & (1 << bit_pos)) != 0;
 }
 
 void bitset_free(bitset_t *set)
 {
-    free(set->data);
+    free(set->cells);
 }
 
 #endif // COMMON_H
