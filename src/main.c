@@ -6,8 +6,7 @@
 #include <time.h>
 #include <string.h>
 
-
-#define TSIZE 32
+#include "globals.h"
 
 typedef struct tiling_layout_t
 {
@@ -187,11 +186,12 @@ int main(void)
         }
         if (IsKeyPressed(KEY_UP))      player_pos.y -= 1.0f * TSIZE;
         if (IsKeyPressed(KEY_DOWN))    player_pos.y += 1.0f * TSIZE;
+        camera.target = player_pos;
+
 
         BeginDrawing();
         ClearBackground((Color){ .r = 0, .g = 100, .b = 0, .a = 255 });
         {
-            camera.target = player_pos;
             BeginMode2D(camera);
             draw_tiled_background(tiling_textures, layout);
             DrawTextureEx(textures[player_tex_id], player_pos, 0, 1, WHITE);
