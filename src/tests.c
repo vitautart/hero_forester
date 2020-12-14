@@ -82,8 +82,6 @@ void test_dynarr_full()
     for (int i = 0; i < arr.size; i++)
         assert(GET_AS(int, dynarr_get(&arr, i)) == i);
     
-    assert(arr.capacity == 8);
-
     for (int i = arr.size - 1; i >= 0; i--)
     {
         int last = GET_AS(int, dynarr_get(&arr, arr.size - 1)); 
@@ -95,7 +93,6 @@ void test_dynarr_full()
     dynarr_free(&arr);
 
     arr = dynarr_allocate(sizeof(int), 5, 4);
-    assert(arr.capacity == 5);
 
     dynarr_set(&arr, 2, &(int){10});
     assert(GET_AS(int, dynarr_get(&arr, 2)) == 10);
@@ -105,10 +102,22 @@ void test_dynarr_full()
     printf("test_dynarr_full:\tSUCCESS\n");
 }
 
+void test_dynarr_access()
+{
+    dynarr_t arr[2] = { dynarr_allocate(sizeof(int), 10, 10), dynarr_allocate(sizeof(int), 0, 0) };
+    dynarr_t *ref = &arr[1];
+    for (int i = 0; i < 5; i++) 
+        dynarr_add(ref, &i);
+
+    assert(arr[1].size == 5);
+    printf("test_dynarr_access:\tSUCCESS\n");
+}
+
 int main()
 {
     test_bitset_allocate();
     test_bitset_get_set();
     test_dynarr_full();
+    test_dynarr_access();
     return 0;
 }

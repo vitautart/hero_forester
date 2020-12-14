@@ -68,23 +68,27 @@ dynarr_t dynarr_allocate(int stride, int size, int capacity)
 {
     assert(stride > 0);
     dynarr_t arr;
+    arr.size = size;
     arr.stride = stride;
     arr.capacity = capacity > size ? capacity : size;
-    if (arr.capacity == 0) arr.capacity = 4;
-    arr.size = size;
+    arr.capacity = arr.capacity != 0 ? arr.capacity : 4;
     arr.data = malloc(arr.capacity * arr.stride);
     return arr;
 }
 
-void dynarr_add (dynarr_t* arr, void* elem)
+com_result_t dynarr_add (dynarr_t* arr, void* elem)
 {
     if (arr->capacity == arr->size)
     {
         arr->capacity = arr->capacity * 2;
-        arr->data = realloc(arr->data, arr->capacity * arr->stride);
+        void* ptr = realloc(arr->data, arr->capacity * arr->stride);
+        if (ptr == NULL)
+            return COM_ERR;
+        arr->data = ptr;
     }
     memcpy(arr->data + arr->size * arr->stride, elem, arr->stride);
     arr->size++;
+    return COM_OK;
 }
 
 void dynarr_remove_swap (dynarr_t* arr, int idx)
