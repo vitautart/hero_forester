@@ -5,6 +5,9 @@
 
 #include <stdint.h>
 #include <raylib.h>
+#include <raymath.h>
+
+#define ENTITY_TYPES_COUNT 3
 
 typedef enum
 {
@@ -13,6 +16,8 @@ typedef enum
     TREE_ENTITY = 2,
     UNKNOWN_ENTITY = 1 << 31
 } entity_type_t;
+
+#define EMPTY_ENTITY (entity_t) { .type =UNKNOWN_ENTITY, .id = -1  }
 
 typedef struct entity_t
 {
@@ -40,7 +45,7 @@ typedef struct ent_tree_t
 
 typedef struct entity_container_t
 { 
-    dynarr_t entities[3];
+    dynarr_t entities[ENTITY_TYPES_COUNT];
 } entity_container_t;
 
 typedef struct map_t
@@ -55,6 +60,7 @@ typedef struct map_t
 
 
 int entity_get_mapid (const entity_container_t* entities, entity_t entity);
+void entity_set_mapid (const entity_container_t* entities, entity_t entity, int mapid);
 
 com_result_t map_allocate(map_t * map, int width, int height)
 {
@@ -78,9 +84,9 @@ com_result_t map_allocate(map_t * map, int width, int height)
     return COM_OK;
 }
 
-inline int map_get_idx(const map_t * map, int x, int y)
+inline int map_get_idx(const map_t * map, ivec_t pos)
 {
-    return x + y * map->width;
+    return pos.x + pos.y * map->width;
 }
 
 void map_free (map_t * map)
@@ -91,29 +97,59 @@ void map_free (map_t * map)
     bitset_free(&map->obstacles);
 }
 
-void* add_entity(entity_container_t* container, map_t* map, int x, int y, entity_type_t type)
+void* add_entity(entity_container_t* container, map_t* map, ivec_t pos, entity_type_t type)
 {
-    int idx = map_get_idx(map, x, y);
+    int idx = map_get_idx(map, pos);
     dynarr_t *arr = &container->entities[type];
     dynarr_add(arr, &(ent_player_t){.mapid = idx});
     map->entities[idx].type = TREE_ENTITY;
     map->entities[idx].id = container->entities[PLAYER_ENTITY].size - 1;
+    bitset_set(&map->obstacles, idx, 1);
     return dynarr_get(arr, map->entities[idx].id);
 }
 
-void remove_entity(entity_container_t* container, map_t* map, int x, int y)
+void remove_entity(entity_container_t* container, map_t* map, ivec_t pos)
 {
-    int idx = map_get_idx(map, x, y);
+    int idx = map_get_idx(map, pos);
     entity_t entity = map->entities[idx];
+    map->entities[idx] = EMPTY_ENTITY;
+    bitset_set(&map->obstacles, idx, 0);
+
     dynarr_t *arr = &container->entities[entity.type];
-    dynarr_remove_swap(arr, entity.id);
-    int mapid = entity_get_mapid(container, entity);
-    map->entities[mapid].id = idx;
+    if (dynarr_remove_swap(arr, entity.id)) // if swap was present than TRUE
+    {
+        int mapid = entity_get_mapid(container, entity);
+        map->entities[mapid].id = entity.id;
+    }
 }
+
+void move_entity(entity_container_t* container, map_t* map, ivec_t from, ivec_t to)
+{
+    int idx_to = map_get_idx(map, to);
+
+    if (bitset_get(&map->obstacles, idx_to) != 0) return;
+
+    int idx_from = map_get_idx(map, from);
+
+    entity_t entity = map->entities[idx_from];
+    map->entities[idx_from] = EMPTY_ENTITY;
+    map->entities[idx_to] = entity;
+    bitset_set(&map->obstacles, idx_from, 0);
+    bitset_set(&map->obstacles, idx_to, 1);
+
+    entity_set_mapid(container, entity, idx_to);
+}
+
 
 int entity_get_mapid (const entity_container_t* entities, entity_t entity)
 {
     return GET_AS(int, dynarr_get(&entities->entities[entity.type], entity.id));
+}
+
+void entity_set_mapid (const entity_container_t* entities, entity_t entity, int mapid)
+{
+    int* ptr = (int*)dynarr_get(&entities->entities[entity.type], entity.id);
+    *ptr = mapid;
 }
 
 uint16_t entity_get_texture_id (const entity_container_t* entities, entity_t entity)

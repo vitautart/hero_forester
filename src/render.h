@@ -1,6 +1,7 @@
 #ifndef RENDER_H
 #define RENDER_H
 
+#include "common.h"
 #include "globals.h"
 #include "model.h"
 #include <raylib.h>
@@ -37,9 +38,10 @@ void render_ground(const map_t * map, Texture2D* textures)
     {
         for (int y = 0; y < map->height; y++)
         {
-            int texture_id = map->ground_views[map_get_idx(map, x, y)];
-            int x_pos = x * TSIZE;
-            int y_pos = y * TSIZE;
+            ivec_t pos = {x, y};
+            int texture_id = map->ground_views[map_get_idx(map, pos)];
+            int x_pos = pos.x * TSIZE;
+            int y_pos = pos.y * TSIZE;
             DrawTexture(textures[texture_id], x_pos, y_pos, WHITE);
         }
     }
@@ -51,11 +53,14 @@ void render_entities(const map_t * map, const entity_container_t* entities, Text
     {
         for (int y = 0; y < map->height; y++)
         {
-            int idx = map_get_idx(map, x, y);
+            ivec_t pos = {x, y};
+            int idx = map_get_idx(map, pos);
             entity_t entity = map->entities[idx];
 
-            int x_pos = x * TSIZE;
-            int y_pos = y * TSIZE;
+            if(entity.type == UNKNOWN_ENTITY) continue;
+
+            int x_pos = pos.x * TSIZE;
+            int y_pos = pos.y * TSIZE;
             uint16_t texture_id = entity_get_texture_id(entities, entity);
 
             DrawTexture(textures[texture_id], x_pos, y_pos, WHITE);

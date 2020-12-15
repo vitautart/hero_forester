@@ -33,6 +33,40 @@ typedef struct dynarr_t
     int stride;
 } dynarr_t;
 
+typedef struct ivec_t
+{
+    int x;
+    int y;
+} ivec_t;
+
+inline ivec_t ivec_add(ivec_t v1, ivec_t v2)
+{
+    return (ivec_t) 
+    {
+        .x = v1.x + v2.x,
+        .y = v1.y + v2.y
+    };
+}
+
+inline ivec_t ivec_mul(int s, ivec_t v)
+{
+    return (ivec_t)
+    {
+        .x = s * v.x,
+        .y = s * v.y
+    };
+}
+
+inline ivec_t ivec_sub(ivec_t v1, ivec_t v2)
+{
+    return (ivec_t) 
+    {
+        .x = v1.x - v2.x,
+        .y = v1.y - v2.y
+    };
+}
+
+
 bitset_t bitset_allocate(int bitcount)
 {
     bitset_t set;
@@ -91,7 +125,9 @@ com_result_t dynarr_add (dynarr_t* arr, void* elem)
     return COM_OK;
 }
 
-void dynarr_remove_swap (dynarr_t* arr, int idx)
+// return 1 - swap was happened
+// return 0 - swap wasn't happened
+int dynarr_remove_swap (dynarr_t* arr, int idx)
 {
     assert(idx >= 0);
     assert(idx < arr->size);
@@ -101,7 +137,9 @@ void dynarr_remove_swap (dynarr_t* arr, int idx)
         void* ptr_idx = arr->data + idx * arr->stride;
         void* ptr_last = arr->data + arr->size * arr->stride;
         memcpy(ptr_idx, ptr_last, arr->stride);
+        return 1;
     }
+    return 0;
 }
 
 void* dynarr_get(const dynarr_t* arr, int idx)
