@@ -17,6 +17,13 @@ typedef enum
     UNKNOWN_ENTITY = 1 << 31
 } entity_type_t;
 
+typedef enum
+{
+    GRASS_LAYER_TYPE,
+    ROCK_LAYER_TYPE,
+    SAND_LAYER_TYPE
+} ground_layer_t;
+
 #define EMPTY_ENTITY (entity_t) { .type =UNKNOWN_ENTITY, .id = -1  }
 
 typedef struct entity_t
@@ -61,6 +68,7 @@ typedef struct map_t
 
 int entity_get_mapid (const entity_container_t* entities, entity_t entity);
 void entity_set_mapid (const entity_container_t* entities, entity_t entity, int mapid);
+int map_get_idx(const map_t * map, ivec_t pos);
 
 com_result_t map_allocate(map_t * map, int width, int height)
 {
@@ -81,10 +89,17 @@ com_result_t map_allocate(map_t * map, int width, int height)
     map->width = width;
     map->height = height;
 
+    for (int y = 0; y < height; y++)
+        for(int x = 0; x < width; x++)
+        {
+
+            map->entities[map_get_idx(map, (ivec_t){x, y})] = EMPTY_ENTITY;
+        }
+
     return COM_OK;
 }
 
-inline int map_get_idx(const map_t * map, ivec_t pos)
+int map_get_idx(const map_t * map, ivec_t pos)
 {
     return pos.x + pos.y * map->width;
 }

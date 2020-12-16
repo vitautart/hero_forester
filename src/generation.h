@@ -8,11 +8,12 @@
 
 #include <stdlib.h>
 #include <time.h>
-#
+
 float norm_rand()
 {
     return (RAND_MAX - rand()) / (float)RAND_MAX;
 }
+
 
 void generate_location(int width, int height, entity_container_t* container, map_t* map)
 {
@@ -24,20 +25,41 @@ void generate_location(int width, int height, entity_container_t* container, map
     // GENERATION OF TREES
     time_t t;
     srand((unsigned) time(&t));
-    for (int y = 0; y < map->width; y++)
-        for (int x = 0; x < map->height; x++)
-            if (norm_rand() > 0.5)
-                add_entity(container, map, (ivec_t) {x, y}, TREE_ENTITY);
 
-    // ADD PLAYER TO RANDOM POSITION
-    for (int y = 5; y < map->width - 5; y++)
-        for (int x = 5; x < map->height - 5; x++)
-            if (bitset_get(&map->obstacles, map_get_idx(map, (ivec_t){x, y}) == 0))
+    // FILL MAP GROUND LAYER
+    for (int y = 0; y < map->height; y++)
+        for (int x = 0; x < map->width; x++)
+        {
+            int idx = map_get_idx(map, (ivec_t){x, y});
+            map->ground_layer[idx] = GRASS_LAYER_TYPE;
+            map->ground_views[idx] = TEXTURE_ID_GRASS_1;
+        }
+    
+    // GENERATION OF TREES
+    for (int y = 0; y < map->height; y++)
+        for (int x = 0; x < map->width; x++)
+            if (norm_rand() > 0.5)
             {
-                add_entity(container, map, (ivec_t) {x, y}, PLAYER_ENTITY);
-                break;
+                ent_tree_t* tree = (ent_tree_t*)add_entity(container, map, (ivec_t) {x, y}, TREE_ENTITY);
+                tree->texture_id = TEXTURE_ID_TREE_1;
             }
 
+    // ADD PLAYER TO RANDOM POSITION
+    for (int y = 5; y < (map->height - 5); y++)
+    {
+        int find_place = 0;
+        for (int x = 5; x < (map->width - 5); x++)
+        {
+            find_place = bitset_get(&map->obstacles, map_get_idx(map, (ivec_t){x, y})) == 0;
+            if (find_place)
+            {
+                ent_player_t* player = (ent_player_t*)add_entity(container, map, (ivec_t) {x, y}, PLAYER_ENTITY);
+                player->texture_id = TEXTURE_ID_PLAYER_1;
+                break;
+            }
+        }
+        if (find_place) break;
+    }
 }
 
 void destroy_location(entity_container_t* container, map_t* map)

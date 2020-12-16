@@ -15,7 +15,7 @@ void render_effects();
 void render_ingame_ui();
 void render_ui();
 
-void render(Camera2D camera, const map_t *map, const entity_container_t* entities,
+void render(Camera2D camera, const map_t *map, const entity_container_t* container,
         Texture2D *textures)
 {
     BeginDrawing();
@@ -23,7 +23,7 @@ void render(Camera2D camera, const map_t *map, const entity_container_t* entitie
     
     BeginMode2D(camera);
     render_ground(map, textures);
-    render_entities(map, entities, textures);
+    render_entities(map, container, textures);
     render_effects();
     render_ingame_ui();
     EndMode2D();
@@ -34,9 +34,9 @@ void render(Camera2D camera, const map_t *map, const entity_container_t* entitie
 
 void render_ground(const map_t * map, Texture2D* textures)
 {
-    for (int x = 0; x < map->width; x++)
+    for (int y = 0; y < map->height; y++)
     {
-        for (int y = 0; y < map->height; y++)
+        for (int x = 0; x < map->width; x++)
         {
             ivec_t pos = {x, y};
             int texture_id = map->ground_views[map_get_idx(map, pos)];
@@ -47,11 +47,12 @@ void render_ground(const map_t * map, Texture2D* textures)
     }
 }
 
-void render_entities(const map_t * map, const entity_container_t* entities, Texture2D* textures)
+void render_entities(const map_t * map, const entity_container_t* container, Texture2D* textures)
 {
-    for (int x = 0; x < map->width; x++)
+    int player_count = 0;
+    for (int y = 0; y < map->height; y++)
     {
-        for (int y = 0; y < map->height; y++)
+        for (int x = 0; x < map->width; x++)
         {
             ivec_t pos = {x, y};
             int idx = map_get_idx(map, pos);
@@ -61,12 +62,16 @@ void render_entities(const map_t * map, const entity_container_t* entities, Text
 
             int x_pos = pos.x * TSIZE;
             int y_pos = pos.y * TSIZE;
-            uint16_t texture_id = entity_get_texture_id(entities, entity);
+            uint16_t texture_id = entity_get_texture_id(container, entity);
 
             DrawTexture(textures[texture_id], x_pos, y_pos, WHITE);
         }
     }
 }
+
+void render_effects() {}
+
+void render_ingame_ui(){}
 
 void render_ui()
 {

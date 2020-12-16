@@ -6,7 +6,12 @@
 #include <time.h>
 #include <string.h>
 
-#include "globals.h"
+//#include "globals.h"
+
+#include "resource.h"
+#include "generation.h"
+#include "model.h"
+#include "render.h"
 
 typedef struct tiling_layout_t
 {
@@ -73,10 +78,10 @@ void free_tiling_layout(tiling_layout_t layout)
     free(layout.data);
 }
 
-float norm_rand()
+/*float norm_rand()
 {
     return (RAND_MAX - rand()) / (float)RAND_MAX;
-}
+}*/
 
 void load_resources (Texture2D** textures, int* texture_count)
 {
@@ -118,7 +123,7 @@ void draw_tiled_background(Texture2D* textures, tiling_layout_t layout)
     }
 }
 
-int main(void)
+/*int main(void)
 {
     int screen_w = 640;
     int screen_h = 480;
@@ -209,5 +214,29 @@ int main(void)
     free(positions);
     CloseWindow();
     return 0;
-}
+}*/
 
+int main (void)
+{
+    Camera2D camera = 
+    {
+        .offset = {10, 10},
+        .target = {10, 10},
+        .rotation = 0.0f,
+        .zoom = 2.0f
+    };
+    entity_container_t container;
+    map_t map;
+    InitWindow(800, 600, "HERO FORESTER");
+    Texture2D* textures = load_textures();
+    generate_location(500, 500, &container, &map);
+
+    SetTargetFPS(60);
+    while(!WindowShouldClose())
+    { 
+        render(camera, &map, &container, textures);
+    }
+    destroy_location(&container, &map);
+    CloseWindow();
+    return 0;
+}
