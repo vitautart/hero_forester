@@ -39,7 +39,7 @@ typedef struct ivec_t
     int y;
 } ivec_t;
 
-inline ivec_t ivec_add(ivec_t v1, ivec_t v2)
+ivec_t ivec_add(ivec_t v1, ivec_t v2)
 {
     return (ivec_t) 
     {
@@ -48,7 +48,7 @@ inline ivec_t ivec_add(ivec_t v1, ivec_t v2)
     };
 }
 
-inline ivec_t ivec_mul(int s, ivec_t v)
+ivec_t ivec_mul(int s, ivec_t v)
 {
     return (ivec_t)
     {
@@ -57,7 +57,7 @@ inline ivec_t ivec_mul(int s, ivec_t v)
     };
 }
 
-inline ivec_t ivec_sub(ivec_t v1, ivec_t v2)
+ivec_t ivec_sub(ivec_t v1, ivec_t v2)
 {
     return (ivec_t) 
     {
@@ -121,6 +121,20 @@ com_result_t dynarr_add (dynarr_t* arr, void* elem)
         arr->data = ptr;
     }
     memcpy(arr->data + arr->size * arr->stride, elem, arr->stride);
+    arr->size++;
+    return COM_OK;
+}
+
+com_result_t dynarr_increment (dynarr_t* arr)
+{
+    if (arr->capacity == arr->size)
+    {
+        arr->capacity = arr->capacity * 2;
+        void* ptr = realloc(arr->data, arr->capacity * arr->stride);
+        if (ptr == NULL)
+            return COM_ERR;
+        arr->data = ptr;
+    }
     arr->size++;
     return COM_OK;
 }

@@ -22,6 +22,7 @@ void generate_location(int width, int height, entity_container_t* container, map
     container->entities[ENEMY_ENTITY] = dynarr_allocate(sizeof(ent_enemy_t), 0, 32);
     container->entities[TREE_ENTITY] = dynarr_allocate(sizeof(ent_enemy_t), 0, width * height);
 
+
     // GENERATION OF TREES
     time_t t;
     srand((unsigned) time(&t));
@@ -34,14 +35,22 @@ void generate_location(int width, int height, entity_container_t* container, map
             map->ground_layer[idx] = GRASS_LAYER_TYPE;
             map->ground_views[idx] = TEXTURE_ID_GRASS_1;
         }
-    
-    // GENERATION OF TREES
+
+    // SET OBSTACLES TO ZERO
+    for (int i = 0; i < map->height * map->width; i++)
+        bitset_set(&map->obstacles, i, 0);
+
+    // GENERATION OF TREES AND FILL EMPTY ENTITIES
     for (int y = 0; y < map->height; y++)
         for (int x = 0; x < map->width; x++)
             if (norm_rand() > 0.5)
             {
                 ent_tree_t* tree = (ent_tree_t*)add_entity(container, map, (ivec_t) {x, y}, TREE_ENTITY);
                 tree->texture_id = TEXTURE_ID_TREE_1;
+            }
+            else
+            {
+                map->entities[map_get_idx(map, (ivec_t){x, y})] = EMPTY_ENTITY;
             }
 
     // ADD PLAYER TO RANDOM POSITION
@@ -54,7 +63,7 @@ void generate_location(int width, int height, entity_container_t* container, map
             if (find_place)
             {
                 ent_player_t* player = (ent_player_t*)add_entity(container, map, (ivec_t) {x, y}, PLAYER_ENTITY);
-                player->texture_id = TEXTURE_ID_PLAYER_1;
+                player->texture_id = TEXTURE_ID_PLAYER_2;
                 break;
             }
         }

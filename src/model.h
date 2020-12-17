@@ -67,7 +67,7 @@ typedef struct map_t
 
 
 int entity_get_mapid (const entity_container_t* entities, entity_t entity);
-void entity_set_mapid (const entity_container_t* entities, entity_t entity, int mapid);
+void entity_set_mapid (entity_container_t* entities, entity_t entity, int mapid);
 int map_get_idx(const map_t * map, ivec_t pos);
 
 com_result_t map_allocate(map_t * map, int width, int height)
@@ -89,19 +89,21 @@ com_result_t map_allocate(map_t * map, int width, int height)
     map->width = width;
     map->height = height;
 
-    for (int y = 0; y < height; y++)
-        for(int x = 0; x < width; x++)
-        {
-
-            map->entities[map_get_idx(map, (ivec_t){x, y})] = EMPTY_ENTITY;
-        }
-
     return COM_OK;
 }
 
 int map_get_idx(const map_t * map, ivec_t pos)
 {
     return pos.x + pos.y * map->width;
+}
+
+ivec_t map_get_pos(const map_t * map, int idx)
+{
+    return (ivec_t)
+    {
+        .x = idx % map->width,
+        .y = idx / map->width
+    };
 }
 
 void map_free (map_t * map)
@@ -116,10 +118,15 @@ void* add_entity(entity_container_t* container, map_t* map, ivec_t pos, entity_t
 {
     int idx = map_get_idx(map, pos);
     dynarr_t *arr = &container->entities[type];
-    dynarr_add(arr, &(ent_player_t){.mapid = idx});
-    map->entities[idx].type = TREE_ENTITY;
-    map->entities[idx].id = container->entities[PLAYER_ENTITY].size - 1;
+    dynarr_increment(arr);
+
+    entity_t* e = &map->entities[idx];
+    e->type = type;
+    e->id = container->entities[type].size - 1;
+    entity_set_mapid(container, *e, idx);
+
     bitset_set(&map->obstacles, idx, 1);
+
     return dynarr_get(arr, map->entities[idx].id);
 }
 
@@ -138,33 +145,37 @@ void remove_entity(entity_container_t* container, map_t* map, ivec_t pos)
     }
 }
 
-void move_entity(entity_container_t* container, map_t* map, ivec_t from, ivec_t to)
+// return 0 - not moved
+// return 1 - moved
+int move_entity(entity_container_t* container, map_t* map, ivec_t from, ivec_t to)
 {
     int idx_to = map_get_idx(map, to);
 
-    if (bitset_get(&map->obstacles, idx_to) != 0) return;
+    if (bitset_get(&map->obstacles, idx_to) != 0) return 0;
 
     int idx_from = map_get_idx(map, from);
 
     entity_t entity = map->entities[idx_from];
+
     map->entities[idx_from] = EMPTY_ENTITY;
     map->entities[idx_to] = entity;
     bitset_set(&map->obstacles, idx_from, 0);
     bitset_set(&map->obstacles, idx_to, 1);
 
     entity_set_mapid(container, entity, idx_to);
+    return 1;
 }
 
-
-int entity_get_mapid (const entity_container_t* entities, entity_t entity)
+int entity_get_mapid (const entity_container_t* container, entity_t entity)
 {
-    return GET_AS(int, dynarr_get(&entities->entities[entity.type], entity.id));
+    return GET_AS(int, dynarr_get(&container->entities[entity.type], entity.id));
 }
 
-void entity_set_mapid (const entity_container_t* entities, entity_t entity, int mapid)
+void entity_set_mapid (entity_container_t* container, entity_t entity, int mapid)
 {
-    int* ptr = (int*)dynarr_get(&entities->entities[entity.type], entity.id);
+    int* ptr = (int*)dynarr_get(&container->entities[entity.type], entity.id);
     *ptr = mapid;
+    //dynarr_set(&container->entities[entity.type], entity.id, &mapid);
 }
 
 uint16_t entity_get_texture_id (const entity_container_t* entities, entity_t entity)
