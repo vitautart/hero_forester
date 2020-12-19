@@ -7,23 +7,21 @@
 #include <raylib.h>
 
 
-void render(Camera2D camera, const map_t *map, const entity_container_t* entities,
-        Texture2D *textures);
+void render(Camera2D camera, const model_t* map, Texture2D *textures);
 void render_ground(const map_t * map, Texture2D* textures);
-void render_entities(const map_t * map, const entity_container_t* entities, Texture2D* textures);
+void render_entities(const model_t* model, Texture2D* textures);
 void render_effects();
 void render_ingame_ui();
 void render_ui();
 
-void render(Camera2D camera, const map_t *map, const entity_container_t* container,
-        Texture2D *textures)
+void render(Camera2D camera, const model_t* model, Texture2D *textures)
 {
     BeginDrawing();
     ClearBackground((Color){ .r = 0, .g = 0, .b = 0, .a = 255 });
     
     BeginMode2D(camera);
-    render_ground(map, textures);
-    render_entities(map, container, textures);
+    render_ground(&model->map, textures);
+    render_entities(model, textures);
     render_effects();
     render_ingame_ui();
     EndMode2D();
@@ -47,8 +45,9 @@ void render_ground(const map_t * map, Texture2D* textures)
     }
 }
 
-void render_entities(const map_t * map, const entity_container_t* container, Texture2D* textures)
+void render_entities(const model_t* model, Texture2D* textures)
 {
+    const map_t* map = &model->map;
     int player_count = 0;
     for (int y = 0; y < map->height; y++)
     {
@@ -62,7 +61,7 @@ void render_entities(const map_t * map, const entity_container_t* container, Tex
 
             int x_pos = pos.x * TSIZE;
             int y_pos = pos.y * TSIZE;
-            uint16_t texture_id = entity_get_texture_id(container, entity);
+            uint16_t texture_id = entity_get_texture_id(model, entity);
 
             DrawTexture(textures[texture_id], x_pos, y_pos, WHITE);
         }

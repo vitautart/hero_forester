@@ -1,42 +1,9 @@
-#include <raylib.h>
-#include <raymath.h>
-#include <rlgl.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <time.h>
-#include <string.h>
-
 #include "resource.h"
 #include "generation.h"
 #include "model.h"
 #include "render.h"
 #include "simulation.h"
-
-Vector2 get_cell_pos(Vector2 world_pos)
-{
-    return (Vector2)
-    {
-        .x = (int)world_pos.x / TSIZE - (world_pos.x < 0 ? 1 : 0),
-        .y = (int)world_pos.y / TSIZE - (world_pos.y < 0 ? 1 : 0) 
-    };
-}
-
-Vector2 get_cell_pos_under_cursor(Camera2D camera)
-{
-    return get_cell_pos(GetScreenToWorld2D(GetMousePosition(), camera));
-}
-
-void draw_map_cursor(Vector2 cell_pos)
-{
-    Rectangle rect = 
-    {
-        .x = cell_pos.x * TSIZE,
-        .y = cell_pos.y * TSIZE,
-        .height = TSIZE,
-        .width = TSIZE
-    };
-    DrawRectangleRec(rect, (Color){ .r = 200, .g = 0, .b = 0, .a = 100 });
-}
+#include "sync_camera.h"
 
 /*int main(void)
 {
@@ -96,25 +63,25 @@ int main (void)
 {
     Camera2D camera = 
     {
-        .offset = {10, 10},
-        .target = {10, 10},
         .rotation = 0.0f,
         .zoom = 2.0f
     };
-    entity_container_t container;
-    map_t map;
+    int screen_w = 800;
+    int screen_h = 600;
+    model_t model;
     round_t round = ROUND_WAIT;
-    InitWindow(800, 600, "HERO FORESTER");
+    InitWindow(screen_w, screen_h, "HERO FORESTER");
     Texture2D* textures = load_textures();
-    generate_location(500, 500, &container, &map);
+    generate_location(500, 500, &model);
 
     SetTargetFPS(60);
     while(!WindowShouldClose())
     { 
-        round = simulate(&container, &map, round);
-        render(camera, &map, &container, textures);
+        sync_camera(&camera, &model, screen_w, screen_h);
+        round = simulate(&model, round);
+        render(camera, &model, textures);
     }
-    destroy_location(&container, &map);
+    destroy_location(&model);
     CloseWindow();
     return 0;
 }

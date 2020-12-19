@@ -9,7 +9,7 @@
 
 Texture2D* load_textures()
 {
-    long size = sizeof(Texture2D) * (TEXTURE_ID_MAX_VALUE + 1);
+    long size = sizeof(Texture2D) * TEXTURE_ID_MAX_VALUE;
     Texture2D* textures = malloc (size);
     memset(textures, 0, size);
 

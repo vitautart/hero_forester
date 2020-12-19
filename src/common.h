@@ -1,6 +1,7 @@
 #ifndef COMMON_H
 #define COMMON_H
 
+#include <stdlib.h>
 #include <stdint.h>
 #include <malloc.h>
 #include <string.h>
@@ -66,6 +67,10 @@ ivec_t ivec_sub(ivec_t v1, ivec_t v2)
     };
 }
 
+float norm_rand()
+{
+    return (RAND_MAX - rand()) / (float)RAND_MAX;
+}
 
 bitset_t bitset_allocate(int bitcount)
 {
