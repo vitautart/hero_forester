@@ -18,7 +18,7 @@ typedef enum
 round_t simulate(entity_container_t* container, map_t* map, round_t round);
 int player_turn(entity_container_t* container, map_t* map);
 int enemies_turn(entity_container_t* container, map_t* map);
-
+void do_turn(ent_enemy_t* enemy, map_t* map);
 
 round_t simulate(entity_container_t* container, map_t* map, round_t round)
 {
@@ -68,13 +68,22 @@ int player_turn(entity_container_t* container, map_t* map)
     return 0;
 }
 
+// TODO; add more sophisticated logic
+// TODO: separate turns of enemies to different cycles of game
 int enemies_turn(entity_container_t* container, map_t* map)
 {
-    if (container->entities[ENEMY_ENTITY].size == 0) return 1;
+    //if (container->entities[ENEMY_ENTITY].size == 0) return 1;
+    for (int i = 0; i < container->entities[ENEMY_ENTITY].size; i++)
+    {
+        ent_enemy_t* enemy = dynarr_get(&container->entities[ENEMY_ENTITY], i);
+        do_turn(enemy, map);
+    }
 
-    return 0;
+    return 1;
 }
 
-
+void do_turn(ent_enemy_t* enemy, map_t* map)
+{
+}
 
 #endif // SIMULATION_H

@@ -69,6 +69,24 @@ void generate_location(int width, int height, entity_container_t* container, map
         }
         if (find_place) break;
     }
+
+    // TODO: add more enemy
+    // ADD ENEMY TO RANDOM POSITION
+    for (int y = 5; y < (map->height - 5); y++)
+    {
+        int find_place = 0;
+        for (int x = 5; x < (map->width - 5); x++)
+        {
+            find_place = bitset_get(&map->obstacles, map_get_idx(map, (ivec_t){x, y})) == 0;
+            if (find_place)
+            {
+                ent_enemy_t* enemy = (ent_enemy_t*)add_entity(container, map, (ivec_t) {x, y}, ENEMY_ENTITY);
+                enemy->texture_id = TEXTURE_ID_ENEMY_1;
+                break;
+            }
+        }
+        if (find_place) break;
+    }
 }
 
 void destroy_location(entity_container_t* container, map_t* map)
