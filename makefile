@@ -30,7 +30,7 @@ LDFLAGS = -Lexternal/lib
 LDLIBS = -lraylib -lGL -lm -lpthread -ldl -lrt -lX11
 
 all: external $(CFILES)
-	$(CC) $(CFILES) $(INCLUDE_PATHS) $(LDFLAGS) $(LDLIBS) -o build/hero_forester
+	$(CC) $(CFILES) $(INCLUDE_PATHS) $(LDFLAGS) $(LDLIBS) -o build/hero_forester 
 
 external:
 	cd external/raylib/src && $(MAKE) PLATFORM=PLATFORM_DESKTOP
@@ -39,5 +39,5 @@ external_clean:
 	cd external/raylib/src && $(MAKE) clean
 
 tests:
-	$(CC) src/tests.c -o build/tests
+	$(CC) src/tests.c -lm -o build/tests
 	./build/tests

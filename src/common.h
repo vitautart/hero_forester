@@ -6,6 +6,7 @@
 #include <malloc.h>
 #include <string.h>
 #include <assert.h>
+#include <math.h>
 
 #define BITSET_CELL_BITCOUNT 32
 #define BITSET_CELL_BYTECOUNT 4
@@ -24,7 +25,6 @@ typedef struct bitset_t
     int bytecount;
 } bitset_t;
 
-
 // stride - size of element in bytes
 typedef struct dynarr_t
 {
@@ -33,6 +33,17 @@ typedef struct dynarr_t
     int capacity;
     int stride;
 } dynarr_t;
+
+typedef struct qnode_t
+{
+    int key;
+    int value;
+} qnode_t;
+
+typedef struct priority_queue_t
+{
+    dynarr_t data;
+} priority_queue_t;
 
 typedef struct ivec_t
 {
@@ -71,6 +82,8 @@ float norm_rand()
 {
     return (RAND_MAX - rand()) / (float)RAND_MAX;
 }
+
+
 
 bitset_t bitset_allocate(int bitcount)
 {
@@ -146,7 +159,7 @@ com_result_t dynarr_increment (dynarr_t* arr)
 
 // return 1 - swap was happened
 // return 0 - swap wasn't happened
-int dynarr_remove_swap (dynarr_t* arr, int idx)
+int dynarr_remove_swap(dynarr_t* arr, int idx)
 {
     assert(idx >= 0);
     assert(idx < arr->size);
@@ -159,6 +172,21 @@ int dynarr_remove_swap (dynarr_t* arr, int idx)
         return 1;
     }
     return 0;
+}
+
+void dynarr_remove(dynarr_t* arr, int idx)
+{
+    assert(idx >= 0);
+    assert(idx < arr->size);
+    arr->size--; 
+    if(arr->size > 0 && idx < arr->size)
+    {
+        void* dest = arr->data + idx * arr->stride;
+        int next_idx = idx + 1;
+        void* src = arr->data + next_idx * arr->stride;
+        int bytecount = (arr->size - next_idx + 1) * arr->stride;
+        memmove(dest, src, bytecount);
+    }
 }
 
 void* dynarr_get(const dynarr_t* arr, int idx)
@@ -175,6 +203,43 @@ void dynarr_set(dynarr_t* arr, int idx, void* value)
 void dynarr_free(dynarr_t* arr)
 {
     free(arr->data);
+}
+
+int priority_queue_get_child_id_1(int i)
+{
+    return 2 * i + 1;
+}
+
+int priority_queue_get_child_id_2(int i)
+{
+    return 2 * i + 2;
+}
+
+int priority_queue_get_parent_id(int i)
+{
+    return (int)floor( (i - 1) * 0.5f ); 
+}
+
+
+com_result_t priority_queue_push(priority_queue_t* queue, qnode_t node)
+{
+    dynarr_t* data = &queue->data;
+    com_result_t result = dynarr_add(data, &node);
+
+    if (result == COM_ERR) return result;
+
+    int current_idx = data->size - 1;
+    while(1)
+    {
+        if (current_idx == 0) break;
+        int current_parent_idx = priority_queue_get_parent_id(current_idx);
+        qnode_t* parent = (qnode_t*)dynarr_get(data, current_parent_idx);
+        if (parent->key <= node.key) break;
+        //dynarr_swap(data, current_idx, current_parent_idx);
+        current_idx = current_parent_idx;
+    }
+
+    return COM_OK;
 }
 
 #define GET_AS(type, func) *(type*)func

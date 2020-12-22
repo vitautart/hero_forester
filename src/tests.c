@@ -113,11 +113,41 @@ void test_dynarr_access()
     printf("test_dynarr_access:\tSUCCESS\n");
 }
 
+void test_dynarr_remove()
+{
+    dynarr_t arr = dynarr_allocate(sizeof(int), 0, 0);
+    for (int i = 0; i < 10; i++) 
+        dynarr_add(&arr, &i);
+
+    dynarr_remove(&arr, 0);
+
+    for (int i = 0; i < arr.size; i++)
+        assert(GET_AS(int, dynarr_get(&arr, i)) == i+1);
+
+    dynarr_remove(&arr, arr.size - 1);
+
+    for (int i = 0; i < arr.size; i++)
+        assert(GET_AS(int, dynarr_get(&arr, i)) == i+1);
+
+    int idx_to_remove = arr.size / 2;
+
+    dynarr_remove(&arr, idx_to_remove);
+
+    for (int i = 0; i < idx_to_remove; i++)
+        assert(GET_AS(int, dynarr_get(&arr, i)) == i+1);
+
+    for (int i = idx_to_remove; i < arr.size; i++)
+        assert(GET_AS(int, dynarr_get(&arr, i)) == i+2);
+
+    printf("test_dynarr_remove:\tSUCCESS\n");
+}
+
 int main()
 {
     test_bitset_allocate();
     test_bitset_get_set();
     test_dynarr_full();
     test_dynarr_access();
+    test_dynarr_remove();
     return 0;
 }
