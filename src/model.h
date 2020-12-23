@@ -21,7 +21,8 @@ typedef enum
 {
     GRASS_LAYER_TYPE,
     ROCK_LAYER_TYPE,
-    SAND_LAYER_TYPE
+    SAND_LAYER_TYPE,
+    PATH_LAYER_TYPE
 } ground_layer_t;
 
 #define EMPTY_ENTITY (entity_t) { .type =UNKNOWN_ENTITY, .id = -1  }

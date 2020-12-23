@@ -31,6 +31,13 @@ void generate_location(int width, int height, model_t* model)
             map->ground_views[idx] = TEXTURE_ID_GRASS_1;
         }
 
+    for (int x = 0; x < map->width; x++)
+    {
+        int idx = map_get_idx(map, (ivec_t){x, 16});
+        map->ground_layer[idx] = PATH_LAYER_TYPE;
+        map->ground_views[idx] = TEXTURE_ID_PATHLINE_1;
+    }
+
     // SET OBSTACLES TO ZERO
     for (int i = 0; i < map->height * map->width; i++)
         bitset_set(&map->obstacles, i, 0);

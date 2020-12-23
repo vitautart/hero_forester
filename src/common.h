@@ -10,6 +10,7 @@
 
 #define BITSET_CELL_BITCOUNT 32
 #define BITSET_CELL_BYTECOUNT 4
+#define GET_AS(type, func) *(type*)func
 
 typedef enum
 {
@@ -40,10 +41,10 @@ typedef struct qnode_t
     int value;
 } qnode_t;
 
-typedef struct priority_queue_t
+typedef struct minheap_t
 {
     dynarr_t data;
-} priority_queue_t;
+} minheap_t;
 
 typedef struct ivec_t
 {
@@ -174,6 +175,8 @@ int dynarr_remove_swap(dynarr_t* arr, int idx)
     return 0;
 }
 
+
+
 void dynarr_remove(dynarr_t* arr, int idx)
 {
     assert(idx >= 0);
@@ -189,15 +192,25 @@ void dynarr_remove(dynarr_t* arr, int idx)
     }
 }
 
+void dynarr_set(dynarr_t* arr, int idx, void* value)
+{
+    void* ptr = arr->data + idx * arr->stride;
+    memcpy(ptr, value, arr->stride);
+}
+
 void* dynarr_get(const dynarr_t* arr, int idx)
 {
     return arr->data + idx * arr->stride;
 }
 
-void dynarr_set(dynarr_t* arr, int idx, void* value)
+void dynarr_swap(dynarr_t* arr, int idx_1, int idx_2)
 {
-    void* ptr = arr->data + idx * arr->stride;
-    memcpy(ptr, value, arr->stride);
+    char temp[arr->stride];
+    void* ptr_1 = dynarr_get(arr, idx_1);
+    void* ptr_2 = dynarr_get(arr, idx_2);
+    memcpy(temp, ptr_1, arr->stride);
+    memcpy(ptr_1, ptr_2, arr->stride);
+    memcpy(ptr_2, temp, arr->stride);
 }
 
 void dynarr_free(dynarr_t* arr)
@@ -205,23 +218,34 @@ void dynarr_free(dynarr_t* arr)
     free(arr->data);
 }
 
-int priority_queue_get_child_id_1(int i)
+int minheap_get_child_id_1(int i)
 {
     return 2 * i + 1;
 }
 
-int priority_queue_get_child_id_2(int i)
+int minheap_get_child_id_2(int i)
 {
     return 2 * i + 2;
 }
 
-int priority_queue_get_parent_id(int i)
+int minheap_get_parent_id(int i)
 {
     return (int)floor( (i - 1) * 0.5f ); 
 }
 
+minheap_t minheap_allocate(int capacity)
+{
+    minheap_t queue;
+    queue.data = dynarr_allocate(sizeof(qnode_t), 0, capacity);
+    return queue;
+}
 
-com_result_t priority_queue_push(priority_queue_t* queue, qnode_t node)
+void minheap_free(minheap_t* queue)
+{
+    dynarr_free(&queue->data);
+}
+
+com_result_t minheap_push(minheap_t* queue, qnode_t node)
 {
     dynarr_t* data = &queue->data;
     com_result_t result = dynarr_add(data, &node);
@@ -232,16 +256,38 @@ com_result_t priority_queue_push(priority_queue_t* queue, qnode_t node)
     while(1)
     {
         if (current_idx == 0) break;
-        int current_parent_idx = priority_queue_get_parent_id(current_idx);
+        int current_parent_idx = minheap_get_parent_id(current_idx);
         qnode_t* parent = (qnode_t*)dynarr_get(data, current_parent_idx);
         if (parent->key <= node.key) break;
-        //dynarr_swap(data, current_idx, current_parent_idx);
+        dynarr_swap(data, current_idx, current_parent_idx);
         current_idx = current_parent_idx;
     }
 
     return COM_OK;
 }
 
-#define GET_AS(type, func) *(type*)func
+int minheap_pop(minheap_t* queue, qnode_t* node)
+{
+    dynarr_t* data = &queue->data;
+    if (data->size == 0) return 0;
+    *node = GET_AS(qnode_t, dynarr_get(data, 0));
+    if (!dynarr_remove_swap(data, 0)) return 1;
+
+    int current_parent_idx = 0;
+    while(1)
+    {
+        int child_idx_1 = minheap_get_child_id_1(current_parent_idx);
+        int child_idx_2 = minheap_get_child_id_2(current_parent_idx);
+        if (child_idx_1 >= data->size || child_idx_2 >= data->size) break;
+        qnode_t* child_1 = (qnode_t*)dynarr_get(data, child_idx_1);
+        qnode_t* child_2 = (qnode_t*)dynarr_get(data, child_idx_2);
+        int child_idx_to_swap = child_1->key < child_2->key ? child_idx_1 : child_idx_2;
+        dynarr_swap(data, child_idx_to_swap, current_parent_idx);
+        current_parent_idx = child_idx_to_swap;
+    }
+
+    return 1;
+}
+
 
 #endif // COMMON_H

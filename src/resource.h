@@ -27,6 +27,7 @@ Texture2D* load_textures()
     textures[TEXTURE_ID_ENEMY_2] = LoadTextureFromImage(enemy_2_img);
 
     textures[TEXTURE_ID_GRASS_1] = LoadTexture("assets/grass.png");
+    textures[TEXTURE_ID_PATHLINE_1] = LoadTexture("assets/pathline.png");
     textures[TEXTURE_ID_TREE_1] = LoadTexture("assets/tree.png");
 
     UnloadImage(player_1_img);
