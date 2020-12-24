@@ -7,6 +7,7 @@
 #include <string.h>
 #include <assert.h>
 #include <math.h>
+#include <limits.h>
 
 #define BITSET_CELL_BITCOUNT 32
 #define BITSET_CELL_BYTECOUNT 4
@@ -46,6 +47,13 @@ typedef struct minheap_t
     dynarr_t data;
 } minheap_t;
 
+typedef struct hashmap_t
+{
+    dynarr_t* buckets;
+    uint32_t bucket_count;
+    int size;
+} hashmap_t;
+
 typedef struct ivec_t
 {
     int x;
@@ -84,7 +92,10 @@ float norm_rand()
     return (RAND_MAX - rand()) / (float)RAND_MAX;
 }
 
-
+uint32_t knuth_mult_hash(uint32_t input)
+{
+    return (input * 2654435761) % UINT_MAX;
+}
 
 bitset_t bitset_allocate(int bitcount)
 {
@@ -289,5 +300,103 @@ int minheap_pop(minheap_t* queue, qnode_t* node)
     return 1;
 }
 
+hashmap_t hashmap_allocate(uint32_t bucket_count, int bucket_capacity)
+{
+    hashmap_t map;
+    map.size = 0;
+    map.bucket_count = bucket_count;
+    map.buckets = malloc(map.bucket_count * sizeof(dynarr_t));
+
+    for(int i = 0; i < map.bucket_count; i++)
+        map.buckets[i] = dynarr_allocate(sizeof(qnode_t), 0, bucket_capacity);
+
+    return map;
+}
+
+void hashmap_free(hashmap_t* map)
+{
+    for(int i = 0; i < map->bucket_count; i++)
+        dynarr_free(&map->buckets[i]);
+
+    free(map->buckets);
+}
+
+void hashmap_add_or_replace(hashmap_t* map, qnode_t node)
+{
+    uint32_t id = knuth_mult_hash(node.key) % map->size;
+    dynarr_t* bucket = &map->buckets[id];
+
+    map->size++; // MAP SIZE CHANGED !!!!
+    for (int i = 0; i < bucket->size; i++)
+    {
+        qnode_t* current = (qnode_t*)dynarr_get(bucket, i);
+        if (current->key == node.key)
+        {
+            dynarr_set(bucket, i, &node);
+            return;
+        }
+    }
+
+    dynarr_add(bucket, &node);
+}
+
+// 0 - not added
+// 1 - added
+int hashmap_try_add(hashmap_t* map, qnode_t node)
+{   
+    uint32_t id = knuth_mult_hash(node.key) % map->size;
+    dynarr_t* bucket = &map->buckets[id];
+
+    for (int i = 0; i < bucket->size; i++)
+    {
+        qnode_t* current = (qnode_t*)dynarr_get(bucket, i);
+        if (current->key == node.key) return 0;
+    }
+
+    dynarr_add(bucket, &node);
+    map->size++;
+    return 1;
+}
+
+// 0 - key wasn't fount 
+// 1 - key was found
+int hashmap_get(hashmap_t* map, int key, int* value)
+{
+    uint32_t id = knuth_mult_hash(key) % map->size;
+    dynarr_t* bucket = &map->buckets[id];
+
+    for (int i = 0; i < bucket->size; i++)
+    {
+        qnode_t* current = (qnode_t*)dynarr_get(bucket, i);
+        if (current->key == key)
+        {
+            *value = current->value;
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
+// 0 - key wasn't found
+// 1 - key was found, and value removed
+int hashmap_remove(hashmap_t* map, int key)
+{
+    uint32_t id = knuth_mult_hash(key) % map->size;
+    dynarr_t* bucket = &map->buckets[id];
+
+    for (int i = 0; i < bucket->size; i++)
+    {
+        qnode_t* current = (qnode_t*)dynarr_get(bucket, i);
+        if (current->key == key) 
+        {
+            dynarr_remove_swap(bucket, i);
+            map->size--;
+            return 1;
+        }
+    }
+
+    return 0;
+}
 
 #endif // COMMON_H

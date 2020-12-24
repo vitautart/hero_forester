@@ -227,6 +227,24 @@ void test_minheap_push_pop()
     printf("test_minheap_push_pop:\tSUCCESS\n");
 }
 
+void test_knuth_mult_hash_collisions()
+{
+    int size = 100;
+    int collisions_per_bucket[size];
+    memset(collisions_per_bucket, 0, sizeof(int) * size);
+
+    for (int i = 0; i < 100000; i++)
+    {
+        int id = knuth_mult_hash(i) % size;
+        collisions_per_bucket[id] = collisions_per_bucket[id] + 1;
+    }
+
+    for (int i = 0; i < size; i++)
+    {
+        printf("id: %i\t\tcollisions: %i\n", i, collisions_per_bucket[i]);
+    }
+}
+
 int main()
 {
     test_bitset_allocate();
@@ -236,5 +254,6 @@ int main()
     test_dynarr_remove();
     test_dynarr_swap();
     test_minheap_push_pop();
+    test_knuth_mult_hash_collisions();
     return 0;
 }

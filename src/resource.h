@@ -21,15 +21,23 @@ Texture2D* load_textures()
     Image enemy_2_img = ImageCopy(enemy_1_img);
     ImageFlipHorizontal(&enemy_2_img);
 
+    Image pathline_1_img = LoadImage("assets/pathline.png");
+    Image pathline_2_img = ImageCopy(pathline_1_img);
+    ImageRotateCW(&pathline_2_img);
+
     textures[TEXTURE_ID_PLAYER_1] = LoadTextureFromImage(player_1_img);
     textures[TEXTURE_ID_PLAYER_2] = LoadTextureFromImage(player_2_img);
     textures[TEXTURE_ID_ENEMY_1] = LoadTextureFromImage(enemy_1_img);
     textures[TEXTURE_ID_ENEMY_2] = LoadTextureFromImage(enemy_2_img);
 
     textures[TEXTURE_ID_GRASS_1] = LoadTexture("assets/grass.png");
-    textures[TEXTURE_ID_PATHLINE_1] = LoadTexture("assets/pathline.png");
+    textures[TEXTURE_ID_PATHLINE_1] = LoadTextureFromImage(pathline_1_img);
+    textures[TEXTURE_ID_PATHLINE_2] = LoadTextureFromImage(pathline_2_img);
+    textures[TEXTURE_ID_PATHTURN_1] = LoadTexture("assets/pathturn.png");
     textures[TEXTURE_ID_TREE_1] = LoadTexture("assets/tree.png");
 
+    UnloadImage(pathline_1_img);
+    UnloadImage(pathline_2_img);
     UnloadImage(player_1_img);
     UnloadImage(player_2_img);
     UnloadImage(enemy_1_img);

@@ -31,11 +31,23 @@ void generate_location(int width, int height, model_t* model)
             map->ground_views[idx] = TEXTURE_ID_GRASS_1;
         }
 
-    for (int x = 0; x < map->width; x++)
+    // ADD PATHS
+    for (int x = 0; x < 11; x++)
     {
-        int idx = map_get_idx(map, (ivec_t){x, 16});
+        int idx = map_get_idx(map, (ivec_t){x, 11});
         map->ground_layer[idx] = PATH_LAYER_TYPE;
         map->ground_views[idx] = TEXTURE_ID_PATHLINE_1;
+    }
+    for (int y = 0; y < 11; y++)
+    {
+        int idx = map_get_idx(map, (ivec_t){11, y});
+        map->ground_layer[idx] = PATH_LAYER_TYPE;
+        map->ground_views[idx] = TEXTURE_ID_PATHLINE_2;
+    }
+    {
+        int idx = map_get_idx(map, (ivec_t){11, 11});
+        map->ground_layer[idx] = PATH_LAYER_TYPE;
+        map->ground_views[idx] = TEXTURE_ID_PATHTURN_1;
     }
 
     // SET OBSTACLES TO ZERO
