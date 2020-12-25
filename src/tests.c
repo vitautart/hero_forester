@@ -1,9 +1,12 @@
 #include "common.h"
 
 #include <assert.h>
+#include <stdio.h>
 #include <time.h>
 #include <stdlib.h>
 #include <string.h>
+
+//#define TRY_TESTS
 
 void test_bitset_allocate()
 {
@@ -227,6 +230,68 @@ void test_minheap_push_pop()
     printf("test_minheap_push_pop:\tSUCCESS\n");
 }
 
+void test_hashmap_add_get()
+{
+    hashmap_t map = hashmap_allocate(30, 50);
+
+    for (int i = 0; i < 50; i++)
+    {
+        qnode_t node = {i, i};
+        hashmap_add_or_replace(&map, node);
+    }
+
+    for (int i = 50; i < 100; i++)
+    {
+        qnode_t node = {i, i};
+        assert(hashmap_try_add(&map, node));
+    }
+
+    assert(!hashmap_try_add(&map, (qnode_t){5, 5}));
+
+    int value;
+    for (int i = 0; i < 100; i++)
+    {
+        assert(hashmap_get(&map, i, &value));
+        assert(value == i);
+    }
+
+    assert(!hashmap_get(&map, 100, &value));
+
+
+    hashmap_add_or_replace(&map, (qnode_t){6, 10});
+    hashmap_get(&map, 6, &value);
+    assert(value == 10);
+
+    hashmap_free(&map);
+
+    printf("test_hashmap_add_get:\tSUCCESS\n");
+}
+
+void test_hashmap_remove()
+{
+    hashmap_t map = hashmap_allocate(30, 50);
+
+    for (int i = 0; i < 100; i++)
+    {
+        qnode_t node = {i, i};
+        hashmap_add_or_replace(&map, node);
+    }
+
+    int value;
+
+    for (int i = 0; i < 100; i++)
+    {
+        assert(hashmap_remove(&map, i));
+        assert(!hashmap_get(&map, i, &value));
+    }
+
+    assert(!hashmap_remove(&map, 2));
+
+    hashmap_free(&map);
+
+    printf("test_hashmap_remove:\tSUCCESS\n");
+}
+
 void test_knuth_mult_hash_collisions()
 {
     int size = 100;
@@ -254,6 +319,12 @@ int main()
     test_dynarr_remove();
     test_dynarr_swap();
     test_minheap_push_pop();
+    test_hashmap_add_get();
+    test_hashmap_remove();
+
+#ifdef TRY_TESTS
     test_knuth_mult_hash_collisions();
+#endif
+
     return 0;
 }

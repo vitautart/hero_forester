@@ -321,11 +321,15 @@ void hashmap_free(hashmap_t* map)
     free(map->buckets);
 }
 
+dynarr_t* hashmap_get_bucket(hashmap_t* map, uint32_t key)
+{
+    uint32_t id = knuth_mult_hash(key) % map->bucket_count;
+    return &map->buckets[id];
+}
+
 void hashmap_add_or_replace(hashmap_t* map, qnode_t node)
 {
-    uint32_t id = knuth_mult_hash(node.key) % map->size;
-    dynarr_t* bucket = &map->buckets[id];
-
+    dynarr_t* bucket = hashmap_get_bucket(map, node.key);
     map->size++; // MAP SIZE CHANGED !!!!
     for (int i = 0; i < bucket->size; i++)
     {
@@ -344,8 +348,7 @@ void hashmap_add_or_replace(hashmap_t* map, qnode_t node)
 // 1 - added
 int hashmap_try_add(hashmap_t* map, qnode_t node)
 {   
-    uint32_t id = knuth_mult_hash(node.key) % map->size;
-    dynarr_t* bucket = &map->buckets[id];
+    dynarr_t* bucket = hashmap_get_bucket(map, node.key);
 
     for (int i = 0; i < bucket->size; i++)
     {
@@ -362,8 +365,7 @@ int hashmap_try_add(hashmap_t* map, qnode_t node)
 // 1 - key was found
 int hashmap_get(hashmap_t* map, int key, int* value)
 {
-    uint32_t id = knuth_mult_hash(key) % map->size;
-    dynarr_t* bucket = &map->buckets[id];
+    dynarr_t* bucket = hashmap_get_bucket(map, key);
 
     for (int i = 0; i < bucket->size; i++)
     {
@@ -382,8 +384,7 @@ int hashmap_get(hashmap_t* map, int key, int* value)
 // 1 - key was found, and value removed
 int hashmap_remove(hashmap_t* map, int key)
 {
-    uint32_t id = knuth_mult_hash(key) % map->size;
-    dynarr_t* bucket = &map->buckets[id];
+    dynarr_t* bucket = hashmap_get_bucket(map, key);
 
     for (int i = 0; i < bucket->size; i++)
     {
