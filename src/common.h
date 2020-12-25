@@ -103,14 +103,14 @@ int minheap_pop(minheap_t* queue, qnode_t* node);
 hashmap_t hashmap_allocate(uint32_t bucket_count, int bucket_capacity);
 void hashmap_free(hashmap_t* map);
 void hashmap_clear(hashmap_t* map);
-dynarr_t* hashmap_get_bucket(hashmap_t* map, uint32_t key);
+dynarr_t* hashmap_get_bucket(const hashmap_t* map, uint32_t key);
 void hashmap_add_or_replace(hashmap_t* map, qnode_t node);
 // 0 - not added
 // 1 - added
 int hashmap_try_add(hashmap_t* map, qnode_t node);
 // 0 - key wasn't fount 
 // 1 - key was found
-int hashmap_get(hashmap_t* map, int key, int* value);
+int hashmap_get(const hashmap_t* map, int key, int* value);
 // 0 - key wasn't found
 // 1 - key was found, and value removed
 int hashmap_remove(hashmap_t* map, int key);

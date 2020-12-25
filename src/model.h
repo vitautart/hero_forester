@@ -108,6 +108,13 @@ ivec_t map_get_pos(const map_t * map, int idx)
     };
 }
 
+// -1 - is invalid index
+void map_get_neighbors(const map_t* map, ivec_t pos, int* neighbours_idx)
+{
+
+    map_get_idx(map, ivec_add(pos, (ivec_t){1, 0}));
+}
+
 void map_free (map_t * map)
 {
     free(map->ground_layer);
@@ -187,6 +194,96 @@ void entity_set_mapid (model_t* model, entity_t entity, int mapid)
 uint16_t entity_get_texture_id (const model_t* model, entity_t entity)
 {
     return GET_AS(uint16_t, (dynarr_get(&model->entities[entity.type], entity.id) + sizeof(int)));
+}
+
+static inline int manhatten_heuristic(ivec_t p1, ivec_t p2)
+{
+    return abs(p1.x - p2.x) + abs(p1.y - p2.y);
+}
+
+void reconstruct_path(const hashmap_t* path_links, int start_idx, int end_idx, dynarr_t* path)
+{
+    dynarr_add(path, &end_idx);
+    int current = end_idx;
+    int neighbore;
+    while (current != start_idx)
+    {
+        assert(hashmap_get(path_links, current, &neighbore));
+        current = neighbore;
+        dynarr_add(path, &current);
+    }
+}
+
+void find_path(ivec_t start, ivec_t end, const map_t* map, minheap_t* open_set, hashmap_t* path_links, hashmap_t* g_score, bitset_t* open_set_pops_tracker, dynarr_t* path)
+{
+    minheap_clear(open_set);
+    dynarr_clear(path);
+    hashmap_clear(path_links);
+    bitset_clear(open_set_pops_tracker);
+
+    int end_idx = map_get_idx(map, end);
+    int start_idx = map_get_idx(map, start);
+
+    minheap_push(open_set, (qnode_t){ manhatten_heuristic(start, start), start_idx});
+    hashmap_add_or_replace(g_score, (qnode_t){start_idx, 0});
+
+    qnode_t current;
+    while(minheap_pop(open_set, &current))
+    {
+        // TODO: RECONSIDER THIS
+        // NOT SURE ABOUT THIS CHECK
+        // IT IS HERE BECAUSE WE NEED AN OPEN_SET,
+        // THAT CONTAINS UNIQUE VALUES IN IT'S QNODE ELEMENTS
+        // BUT IT ISN'T
+        // SO WE FAKE THIS WITH ADDITIONAL BITSET OPEN_SET_POPS_TRACKER
+        if(bitset_get(open_set_pops_tracker, current.value)) continue;
+        bitset_set(open_set_pops_tracker, current.value, 1);
+
+        if (current.value == end_idx) 
+        {
+            reconstruct_path(path_links, start_idx, end_idx, path);
+            return;
+        }
+
+        int current_idx = current.value;
+        ivec_t current_pos = map_get_pos(map, current_idx);
+
+        ivec_t neighbors[4];
+        {
+            neighbors[0] = ivec_add(current_pos, (ivec_t){1, 0});
+            neighbors[1] = ivec_add(current_pos, (ivec_t){-1, 0});
+            neighbors[2] = ivec_add(current_pos, (ivec_t){0, 1});
+            neighbors[3] = ivec_add(current_pos, (ivec_t){0, -1});
+        }
+        for (int i = 0; i < 4; i++)
+        {
+            ivec_t ngbr_pos = neighbors[i];
+            if (ngbr_pos.x < 0 || ngbr_pos.x >= map->width 
+                    || ngbr_pos.y < 0 || ngbr_pos.y >= map->height) continue;
+
+            int ngbr_idx = map_get_idx(map, ngbr_pos);
+
+            if (!bitset_get(&map->obstacles, ngbr_idx)) continue;
+
+            int g_score_current_value;
+            assert(hashmap_get(g_score, current_idx, &g_score_current_value));
+            int tentative_score = g_score_current_value + 1;
+
+            int g_score_ngbr_value;
+            int g_score_result = hashmap_get(g_score, ngbr_idx, &g_score_ngbr_value);
+            if (g_score_result == 0 || tentative_score < g_score_ngbr_value)
+            {
+                hashmap_add_or_replace(path_links, (qnode_t){ngbr_idx, current_idx});
+                hashmap_add_or_replace(g_score, (qnode_t){ngbr_idx, tentative_score});
+
+                int f_score = tentative_score + manhatten_heuristic(start, ngbr_pos);
+
+                // TODO: RECONSIDER THIS
+                // SEE FIRST TODO IN THIS FUNCTION
+                minheap_push(open_set, (qnode_t){f_score, ngbr_idx});
+            }
+        }
+    }
 }
 
 #endif // MODEL_H

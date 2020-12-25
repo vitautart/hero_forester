@@ -230,7 +230,7 @@ void hashmap_clear(hashmap_t* map)
         dynarr_clear(&map->buckets[i]);
 }
 
-dynarr_t* hashmap_get_bucket(hashmap_t* map, uint32_t key)
+dynarr_t* hashmap_get_bucket(const hashmap_t* map, uint32_t key)
 {
     uint32_t id = knuth_mult_hash(key) % map->bucket_count;
     return &map->buckets[id];
@@ -272,7 +272,7 @@ int hashmap_try_add(hashmap_t* map, qnode_t node)
 
 // 0 - key wasn't fount 
 // 1 - key was found
-int hashmap_get(hashmap_t* map, int key, int* value)
+int hashmap_get(const hashmap_t* map, int key, int* value)
 {
     dynarr_t* bucket = hashmap_get_bucket(map, key);
 
