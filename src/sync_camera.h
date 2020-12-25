@@ -1,6 +1,7 @@
 #ifndef SYNC_CAMERA_H
 #define SYNC_CAMERA_H
 
+#include "common.h"
 #include "globals.h"
 #include "model.h"
 #include "raylib.h"
@@ -67,10 +68,11 @@ void sync_camera(Camera2D* camera, model_t* model, int screen_w, int screen_h)
     Vector2 left_up_world = GetScreenToWorld2D((Vector2){0,0}, *camera);
     Vector2 right_bottom_world = GetScreenToWorld2D((Vector2){screen_w,screen_h}, *camera);
     Vector2 world_camera_delta = Vector2Subtract(right_bottom_world, left_up_world);
-    Vector2 world_camera_delta_half = Vector2Scale(world_camera_delta, 0.5f);
+    //Vector2 world_camera_delta_half = Vector2Scale(world_camera_delta, 0.5f); 
 
     camera->target = map_to_world_c_offset(pos);
-    camera->offset = world_camera_delta_half;
+    camera->offset = world_camera_delta; // TODO: WHY THIS WORKS!!!!!!!!
+    //camera->offset = world_camera_delta_half; // TODO: AND THIS NOT
 }
 
 #endif // SYNC_CAMERA_H
