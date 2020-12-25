@@ -24,7 +24,7 @@ else
 	endif
 endif
 CC = gcc
-CFILES = src/main.c
+CFILES = src/main.c src/common.c
 INCLUDE_PATHS = -Isrc -Iexternal/raylib/src
 LDFLAGS = -Lexternal/lib
 LDLIBS = -lraylib -lGL -lm -lpthread -ldl -lrt -lX11
@@ -39,5 +39,5 @@ external_clean:
 	cd external/raylib/src && $(MAKE) clean
 
 tests:
-	$(CC) src/tests.c -lm -o build/tests
+	$(CC) src/tests.c src/common.c -lm -o build/tests
 	./build/tests
