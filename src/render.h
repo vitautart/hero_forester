@@ -2,26 +2,49 @@
 #define RENDER_H
 
 #include "common.h"
-#include "globals.h"
+#include "presentation.h"
 #include "model.h"
-#include <raylib.h>
 
-
-void render(Camera2D camera, const model_t* map, Texture2D *textures);
-void render_ground(const map_t * map, Texture2D* textures);
-void render_entities(const model_t* model, Texture2D* textures);
+iaabb_t camera_get_map_boundaries(Camera2D camera, int screen_w, int screen_h);
+iaabb_t calculate_draw_bounds(Camera2D camera, const map_t* map, int screen_w, int screen_h, int safety_extent);
+void render(Camera2D camera, const model_t* map, const Texture2D *textures, int screen_w, int screen_h);
+void render_ground(const map_t * map, const Texture2D* textures, const iaabb_t* bounds);
+void render_entities(const model_t* model, const Texture2D* textures, const iaabb_t* bounds);
 void render_effects();
 void render_ingame_ui();
 void render_ui();
 
-void render(Camera2D camera, const model_t* model, Texture2D *textures)
+iaabb_t camera_get_map_boundaries(Camera2D camera, int screen_w, int screen_h)
 {
+    Vector2 left_up_world = GetScreenToWorld2D((Vector2){0,0}, camera);
+    Vector2 right_bottom_world = GetScreenToWorld2D((Vector2){screen_w,screen_h}, camera);
+    return (iaabb_t) 
+    {
+        .min = world_to_map(left_up_world),
+        .max = world_to_map(right_bottom_world)
+    };
+}
+
+iaabb_t calculate_draw_bounds(Camera2D camera, const map_t* map, int screen_w, int screen_h, int safety_extent)
+{
+    iaabb_t bounds = camera_get_map_boundaries(camera, screen_w, screen_h);
+    bounds.min = ivec_add(bounds.min, (ivec_t){-safety_extent,-safety_extent});
+    bounds.max = ivec_add(bounds.max, (ivec_t){ safety_extent, safety_extent});
+    iaabb_t map_box = map_get_size_as_box(map);
+    bounds.min = ivec_clamp(bounds.min, map_box.min, map_box.max);
+    bounds.max = ivec_clamp(bounds.max, map_box.min, map_box.max);
+    return bounds;
+}
+
+void render(Camera2D camera, const model_t* model, const Texture2D *textures, int screen_w, int screen_h)
+{
+    iaabb_t bounds = calculate_draw_bounds(camera, &model->map, screen_w, screen_h, 1);
     BeginDrawing();
     ClearBackground((Color){ .r = 0, .g = 0, .b = 0, .a = 255 });
     
     BeginMode2D(camera);
-    render_ground(&model->map, textures);
-    render_entities(model, textures);
+    render_ground(&model->map, textures, &bounds);
+    render_entities(model, textures, &bounds);
     render_effects();
     render_ingame_ui();
     EndMode2D();
@@ -30,11 +53,11 @@ void render(Camera2D camera, const model_t* model, Texture2D *textures)
     EndDrawing();
 }
 
-void render_ground(const map_t * map, Texture2D* textures)
+void render_ground(const map_t * map, const Texture2D* textures, const iaabb_t* bounds)
 {
-    for (int y = 0; y < map->height; y++)
+    for (int y = bounds->min.y; y <= bounds->max.y; y++)
     {
-        for (int x = 0; x < map->width; x++)
+        for (int x = bounds->min.x; x <= bounds->max.x; x++)
         {
             ivec_t pos = {x, y};
             int texture_id = map->ground_views[map_get_idx(map, pos)];
@@ -45,13 +68,13 @@ void render_ground(const map_t * map, Texture2D* textures)
     }
 }
 
-void render_entities(const model_t* model, Texture2D* textures)
+void render_entities(const model_t* model, const Texture2D* textures, const iaabb_t* bounds)
 {
     const map_t* map = &model->map;
     int player_count = 0;
-    for (int y = 0; y < map->height; y++)
+    for (int y = bounds->min.y; y <= bounds->max.y; y++)
     {
-        for (int x = 0; x < map->width; x++)
+        for (int x = bounds->min.x; x <= bounds->max.x; x++)
         {
             ivec_t pos = {x, y};
             int idx = map_get_idx(map, pos);

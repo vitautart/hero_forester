@@ -108,11 +108,14 @@ ivec_t map_get_pos(const map_t * map, int idx)
     };
 }
 
-// -1 - is invalid index
-void map_get_neighbors(const map_t* map, ivec_t pos, int* neighbours_idx)
+iaabb_t map_get_size_as_box(const map_t* map)
 {
-
-    map_get_idx(map, ivec_add(pos, (ivec_t){1, 0}));
+    iaabb_t result;
+    return (iaabb_t)
+    {
+        .min = {0, 0},
+        .max = {map->width-1, map->height-1}
+    };
 }
 
 void map_free (map_t * map)
@@ -131,13 +134,11 @@ void* add_entity(model_t* model, ivec_t pos, entity_type_t type)
 
     entity_t* e = &model->map.entities[idx];
     e->type = type;
-    //e->id = model->entities[type].size - 1;
     e->id = arr->size - 1;
     entity_set_mapid(model, *e, idx);
 
     bitset_set(&model->map.obstacles, idx, 1);
 
-    //return dynarr_get(arr, model->map.entities[idx].id);
     return dynarr_get(arr, e->id);
 }
 

@@ -79,7 +79,7 @@ int main (void)
     { 
         sync_camera(&camera, &model, screen_w, screen_h);
         round = simulate(&model, round);
-        render(camera, &model, textures);
+        render(camera, &model, textures, screen_w, screen_h);
     }
     destroy_location(&model);
     CloseWindow();

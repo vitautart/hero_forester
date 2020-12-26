@@ -12,6 +12,7 @@
 #define BITSET_CELL_BITCOUNT 32
 #define BITSET_CELL_BYTECOUNT 4
 #define GET_AS(type, func) *(type*)func
+#define IVEC_ZERO (ivec_t){0,0}
 
 typedef enum
 {
@@ -60,6 +61,12 @@ typedef struct ivec_t
     int y;
 } ivec_t;
 
+typedef struct iaabb_t
+{
+    ivec_t min;
+    ivec_t max;
+} iaabb_t;
+
 static inline float norm_rand();
 static inline uint32_t knuth_mult_hash(uint32_t input);
 
@@ -67,6 +74,7 @@ static inline uint32_t knuth_mult_hash(uint32_t input);
 static inline ivec_t ivec_add(ivec_t v1, ivec_t v2);
 static inline ivec_t ivec_mul(int s, ivec_t v);
 static inline ivec_t ivec_sub(ivec_t v1, ivec_t v2);
+static inline ivec_t ivec_clamp(ivec_t v, ivec_t min, ivec_t max);
 
 // bitset_t functions
 bitset_t bitset_allocate(int bitcount);
@@ -150,6 +158,15 @@ static inline ivec_t ivec_sub(ivec_t v1, ivec_t v2)
     {
         .x = v1.x - v2.x,
         .y = v1.y - v2.y
+    };
+}
+
+static inline ivec_t ivec_clamp(ivec_t v, ivec_t min, ivec_t max)
+{
+    return (ivec_t)
+    {
+        .x = v.x > min.x ? v.x < max.x ? v.x : max.x : min.x,
+        .y = v.y > min.y ? v.y < max.y ? v.y : max.y : min.y
     };
 }
 
