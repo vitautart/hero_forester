@@ -6,27 +6,6 @@
 
 #include <raymath.h>
 
-/*Vector2 get_cell_pos_under_cursor(Camera2D camera)
-{
-    return get_cell_pos(GetScreenToWorld2D(GetMousePosition(), camera));
-}*/
-
-void draw_map_cursor(Vector2 cell_pos)
-{
-    Rectangle rect = 
-    {
-        .x = cell_pos.x * TSIZE,
-        .y = cell_pos.y * TSIZE,
-        .height = TSIZE,
-        .width = TSIZE
-    };
-    DrawRectangleRec(rect, (Color){ .r = 200, .g = 0, .b = 0, .a = 100 });
-}
-
-// TODO: add boundary conditions
-// TODO: do something with camera offset
-void sync_camera(Camera2D* camera, model_t* model, int screen_w, int screen_h);
-
 void sync_camera(Camera2D* camera, model_t* model, int screen_w, int screen_h)
 {
     ent_player_t* player = GET_PLAYER(model);

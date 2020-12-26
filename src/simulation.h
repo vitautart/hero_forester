@@ -7,21 +7,25 @@
 
 typedef enum
 {
-    ROUND_WAIT,
-    ROUND_PLAYER,
-    ROUND_ENEMY,
+    ROUND_WAIT, // WAITING FOR PLAYER INPUT
+    ROUND_PLAYER, // PLAYER DID TURN
+    ROUND_ENEMY, // ENEMY DID TURN
 } round_t;
 
-round_t simulate(model_t* model, round_t round);
-int player_turn(model_t* model);
+round_t simulate(model_t* model, user_state_t* user_state, round_t round);
+int player_turn(model_t* model, user_state_t* user_state);
 int enemies_turn(model_t* model);
 void do_turn(ent_enemy_t* enemy, map_t* map);
 
-round_t simulate(model_t* model, round_t round)
+round_t simulate(model_t* model, user_state_t* user_state, round_t round)
 {
+    // TODO:    hardcoded default value for player active mode MOVE_USER_MODE is not OK.
+    //          we must change this to some active tool in user ui that corresponds to certain user mode.
+    user_state->command_mode = round != ROUND_WAIT ? WAIT_FOR_OTHERS_USER_MODE : MOVE_USER_MODE;
+
     if (round == ROUND_WAIT)
     {
-        return player_turn(model) ? ROUND_PLAYER : ROUND_WAIT;
+        return player_turn(model, user_state) ? ROUND_PLAYER : ROUND_WAIT;
     }
     else if (round == ROUND_PLAYER || round == ROUND_ENEMY)
     {
@@ -31,34 +35,39 @@ round_t simulate(model_t* model, round_t round)
     return ROUND_WAIT;
 }
 
-int player_turn(model_t* model)
+int player_turn(model_t* model, user_state_t* user_state)
 {
     ent_player_t* player = GET_PLAYER(model);
-    if (IsKeyPressed(KEY_LEFT))
+
+    if (user_state->command_mode == AUTO_MOVE_SHOOT_USER_MODE 
+        || user_state->command_mode == MOVE_USER_MODE)
     {
-        player->texture_id = TEXTURE_ID_PLAYER_2;
-        ivec_t current = map_get_pos(&model->map, player->mapid);
-        ivec_t next = ivec_add(current, (ivec_t){-1, 0});
-        return move_entity(model, current, next);
-    }
-    else if (IsKeyPressed(KEY_RIGHT))
-    {
-        player->texture_id = TEXTURE_ID_PLAYER_1;
-        ivec_t current = map_get_pos(&model->map, player->mapid);
-        ivec_t next = ivec_add(current, (ivec_t){1, 0});
-        return move_entity(model, current, next);   
-    }
-    else if (IsKeyPressed(KEY_UP))
-    {
-        ivec_t current = map_get_pos(&model->map, player->mapid);
-        ivec_t next = ivec_add(current, (ivec_t){0, -1});
-        return move_entity(model, current, next);   
-    }
-    else if (IsKeyPressed(KEY_DOWN))    
-    {
-        ivec_t current = map_get_pos(&model->map, player->mapid);
-        ivec_t next = ivec_add(current, (ivec_t){0, 1});
-        return move_entity(model, current, next);   
+        if (IsKeyPressed(KEY_LEFT))
+        {
+            player->texture_id = TEXTURE_ID_PLAYER_2;
+            ivec_t current = map_get_pos(&model->map, player->mapid);
+            ivec_t next = ivec_add(current, (ivec_t){-1, 0});
+            return move_entity(model, current, next);
+        }
+        else if (IsKeyPressed(KEY_RIGHT))
+        {
+            player->texture_id = TEXTURE_ID_PLAYER_1;
+            ivec_t current = map_get_pos(&model->map, player->mapid);
+            ivec_t next = ivec_add(current, (ivec_t){1, 0});
+            return move_entity(model, current, next);   
+        }
+        else if (IsKeyPressed(KEY_UP))
+        {
+            ivec_t current = map_get_pos(&model->map, player->mapid);
+            ivec_t next = ivec_add(current, (ivec_t){0, -1});
+            return move_entity(model, current, next);   
+        }
+        else if (IsKeyPressed(KEY_DOWN))    
+        {
+            ivec_t current = map_get_pos(&model->map, player->mapid);
+            ivec_t next = ivec_add(current, (ivec_t){0, 1});
+            return move_entity(model, current, next);   
+        }
     }
 
     return 0;

@@ -11,6 +11,21 @@
 
 typedef enum
 {
+    AUTO_MOVE_SHOOT_USER_MODE,
+    MOVE_USER_MODE,
+    SHOOT_USER_MODE,
+    OPEN_INVENTORY_USER_MODE,
+    WAIT_FOR_OTHERS_USER_MODE
+} user_command_mode_t;
+
+typedef struct user_state_t
+{
+    user_command_mode_t command_mode;
+} user_state_t;
+
+
+typedef enum
+{
     PLAYER_ENTITY = 0,
     ENEMY_ENTITY = 1,
     TREE_ENTITY = 2,
@@ -108,6 +123,11 @@ ivec_t map_get_pos(const map_t * map, int idx)
     };
 }
 
+static inline int map_check_pos_outside(const map_t* map, ivec_t pos)
+{
+    return pos.x < 0 || pos.x >= map->width || pos.y < 0 || pos.y >= map->height;
+}
+
 iaabb_t map_get_size_as_box(const map_t* map)
 {
     iaabb_t result;
@@ -161,8 +181,10 @@ void remove_entity(model_t* model, map_t* map, ivec_t pos)
 // return 1 - moved
 int move_entity(model_t* model, ivec_t from, ivec_t to)
 {
-    if (to.x < 0 || to.x >= model->map.width
-        || to.y < 0 || to.y >= model->map.height) return 0;
+    /*if (to.x < 0 || to.x >= model->map.width
+        || to.y < 0 || to.y >= model->map.height) return 0;*/
+
+    if (map_check_pos_outside(&model->map, to)) return 0;
     
     int idx_to = map_get_idx(&model->map, to);
     
@@ -259,8 +281,9 @@ void find_path(ivec_t start, ivec_t end, const map_t* map, minheap_t* open_set, 
         for (int i = 0; i < 4; i++)
         {
             ivec_t ngbr_pos = neighbors[i];
-            if (ngbr_pos.x < 0 || ngbr_pos.x >= map->width 
-                    || ngbr_pos.y < 0 || ngbr_pos.y >= map->height) continue;
+            /*if (ngbr_pos.x < 0 || ngbr_pos.x >= map->width 
+                    || ngbr_pos.y < 0 || ngbr_pos.y >= map->height) continue;*/
+            if (map_check_pos_outside(map, ngbr_pos)) continue;
 
             int ngbr_idx = map_get_idx(map, ngbr_pos);
 
