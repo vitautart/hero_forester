@@ -35,7 +35,8 @@ void render_cell_with_rectangle(ivec_t pos, int has_border,
 void render_cell_under_cursor(Camera2D camera, const model_t* model,
         const user_state_t* user_state)
 {
-    ivec_t pos = world_to_map(GetScreenToWorld2D(GetMousePosition(), camera));
+    //ivec_t pos = world_to_map(GetScreenToWorld2D(GetMousePosition(), camera));
+    ivec_t pos = map_get_mouse_pos(camera);
     if (user_state->command_mode == MOVE_USER_MODE)
     {
         int map_idx = map_get_idx(&model->map, pos);

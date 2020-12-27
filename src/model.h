@@ -237,12 +237,16 @@ void reconstruct_path(const hashmap_t* path_links, int start_idx, int end_idx, d
     }
 }
 
-void find_path(ivec_t start, ivec_t end, const map_t* map, minheap_t* open_set, hashmap_t* path_links, hashmap_t* g_score, bitset_t* open_set_pops_tracker, dynarr_t* path)
+int map_find_path(ivec_t start, ivec_t end, const map_t* map, minheap_t* open_set, hashmap_t* path_links, hashmap_t* g_score, bitset_t* open_set_pops_tracker, dynarr_t* path)
 {
+    // TODO: remove this to more convenient way that finds reachability of end.
+    int SAFETY_AGAINST_WHILE = 0;
+
     minheap_clear(open_set);
-    dynarr_clear(path);
     hashmap_clear(path_links);
+    hashmap_clear(g_score);
     bitset_clear(open_set_pops_tracker);
+    dynarr_clear(path);
 
     int end_idx = map_get_idx(map, end);
     int start_idx = map_get_idx(map, start);
@@ -253,6 +257,8 @@ void find_path(ivec_t start, ivec_t end, const map_t* map, minheap_t* open_set, 
     qnode_t current;
     while(minheap_pop(open_set, &current))
     {
+        if (SAFETY_AGAINST_WHILE > 100000) return 0; 
+        SAFETY_AGAINST_WHILE++;
         // TODO: RECONSIDER THIS
         // NOT SURE ABOUT THIS CHECK
         // IT IS HERE BECAUSE WE NEED AN OPEN_SET,
@@ -265,7 +271,7 @@ void find_path(ivec_t start, ivec_t end, const map_t* map, minheap_t* open_set, 
         if (current.value == end_idx) 
         {
             reconstruct_path(path_links, start_idx, end_idx, path);
-            return;
+            return 1;
         }
 
         int current_idx = current.value;
@@ -308,6 +314,7 @@ void find_path(ivec_t start, ivec_t end, const map_t* map, minheap_t* open_set, 
             }
         }
     }
+    return 0;
 }
 
 #endif // MODEL_H

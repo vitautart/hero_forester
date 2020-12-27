@@ -37,4 +37,8 @@ static inline Vector2 map_to_world_c_offset(ivec_t map_pos)
     };
 }
 
+ivec_t map_get_mouse_pos(Camera2D camera)
+{
+    return world_to_map(GetScreenToWorld2D(GetMousePosition(), camera));
+}
 #endif // PRESENTATION_H

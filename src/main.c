@@ -25,7 +25,7 @@ int main (void)
     while(!WindowShouldClose())
     { 
         sync_camera(&camera, &model, screen_w, screen_h);
-        round = simulate(&model, &user_state, round);
+        round = simulate(&model, &user_state, camera, round);
         render(camera, &model, &user_state, textures, screen_w, screen_h);
     }
     destroy_location(&model);
