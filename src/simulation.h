@@ -8,43 +8,31 @@
 #include "raylib.h"
 #include <stdio.h>
 
-typedef enum
+#define NO_ACTION_PRODUCED(input_entity) (action_t) {.type = ACTION_TYPE_NO_ACTION_PRODUCED, .entity = input_entity } 
+
+typedef enum 
 {
-    ROUND_WAIT, // WAITING FOR PLAYER INPUT
-    ROUND_PLAYER, // PLAYER DID TURN
-    ROUND_ENEMY, // ENEMY DID TURN
-} round_t;
+    ACTION_TYPE_IDLE,
+    ACTION_TYPE_MOVE_TO,
+    ACTION_TYPE_SMARTMOVE_TO,
+    ACTION_TYPE_NO_ACTION_PRODUCED
+} action_type_t;
+
+typedef struct action_t
+{
+    action_type_t type;
+    entity_t entity;
+    ivec_t map_pos_idx[2];
+} action_t;
 
 static minheap_t global_open_set;
 static hashmap_t global_path_links;
 static hashmap_t global_g_score;
 static bitset_t global_open_set_pops_tracker;
 static dynarr_t global_path;
+static int global_current_id;
 
-round_t simulate(model_t* model, user_state_t* user_state, Camera2D camera, round_t round);
-int player_turn(model_t* model, user_state_t* user_state, Camera2D camera);
-int enemies_turn(model_t* model);
-void do_turn(ent_enemy_t* enemy, map_t* map);
-
-round_t simulate(model_t* model, user_state_t* user_state, Camera2D camera, round_t round)
-{
-    // TODO:    hardcoded default value for player active mode MOVE_USER_MODE is not OK.
-    //          we must change this to some active tool in user ui that corresponds to certain user mode.
-    user_state->command_mode = round != ROUND_WAIT ? WAIT_FOR_OTHERS_USER_MODE : MOVE_USER_MODE;
-
-    if (round == ROUND_WAIT)
-    {
-        return player_turn(model, user_state, camera) ? ROUND_PLAYER : ROUND_WAIT;
-    }
-    else if (round == ROUND_PLAYER || round == ROUND_ENEMY)
-    {
-        return enemies_turn(model) ? ROUND_WAIT : ROUND_ENEMY;
-    }
-
-    return ROUND_WAIT;
-}
-
-int player_turn(model_t* model, user_state_t* user_state, Camera2D camera)
+action_t produce_user_action(model_t* model, entity_t entity, user_state_t* user_state, Camera2D camera)
 {
     ent_player_t* player = GET_PLAYER(model);
 
@@ -53,63 +41,121 @@ int player_turn(model_t* model, user_state_t* user_state, Camera2D camera)
     {
         if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
         {
-            // TODO: add check for obstacle mouse position
             ivec_t mouse_pos = map_get_mouse_pos(camera);
-            if (map_check_pos_outside(&model->map, mouse_pos)) return 0;
+            if (map_check_pos_outside(&model->map, mouse_pos)) return NO_ACTION_PRODUCED(entity);
             ivec_t current = map_get_pos(&model->map, player->mapid);
-            int result = map_find_path(current, mouse_pos, &model->map, &global_open_set, &global_path_links, &global_g_score, &global_open_set_pops_tracker, &global_path);
-
-            if (!result) return 0;
-
-            int next_map_idx = GET_AS(int, dynarr_get(&global_path, global_path.size - 2));
-            return move_entity(model, current, map_get_pos(&model->map, next_map_idx));
+            return (action_t) {.type = ACTION_TYPE_SMARTMOVE_TO, .entity = entity, .map_pos_idx = {current, mouse_pos}};
         }
-        if (IsKeyPressed(KEY_LEFT))
+        else if (IsKeyPressed(KEY_LEFT))
         {
-            player->texture_id = TEXTURE_ID_PLAYER_2;
             ivec_t current = map_get_pos(&model->map, player->mapid);
             ivec_t next = ivec_add(current, (ivec_t){-1, 0});
-            return move_entity(model, current, next);
+            return (action_t) {.type = ACTION_TYPE_MOVE_TO, .entity = entity, .map_pos_idx = {current, next}};
         }
         else if (IsKeyPressed(KEY_RIGHT))
         {
-            player->texture_id = TEXTURE_ID_PLAYER_1;
             ivec_t current = map_get_pos(&model->map, player->mapid);
             ivec_t next = ivec_add(current, (ivec_t){1, 0});
-            return move_entity(model, current, next);   
+            return (action_t) {.type = ACTION_TYPE_MOVE_TO, .entity = entity, .map_pos_idx = {current, next}};
         }
         else if (IsKeyPressed(KEY_UP))
         {
             ivec_t current = map_get_pos(&model->map, player->mapid);
             ivec_t next = ivec_add(current, (ivec_t){0, -1});
-            return move_entity(model, current, next);   
+            return (action_t) {.type = ACTION_TYPE_MOVE_TO, .entity = entity, .map_pos_idx = {current, next}};
         }
         else if (IsKeyPressed(KEY_DOWN))    
         {
             ivec_t current = map_get_pos(&model->map, player->mapid);
             ivec_t next = ivec_add(current, (ivec_t){0, 1});
-            return move_entity(model, current, next);   
+            return (action_t) {.type = ACTION_TYPE_MOVE_TO, .entity = entity, .map_pos_idx = {current, next}};
         }
     }
 
-    return 0;
+    return NO_ACTION_PRODUCED(entity);
 }
 
-// TODO; add more sophisticated logic
-// TODO: separate turns of enemies to different cycles of game
-int enemies_turn(model_t* model)
+action_t produce_ai_action(model_t* model, entity_t entity)
 {
-    for (int i = 0; i < model->entities[ENEMY_ENTITY].size; i++)
+    return (action_t) 
     {
-        ent_enemy_t* enemy = dynarr_get(&model->entities[ENEMY_ENTITY], i);
-        do_turn(enemy, &model->map);
+        .type = ACTION_TYPE_IDLE,
+        .entity = entity
+    };
+}
+
+entity_t next_entity_for_action(const model_t* model, entity_t current)
+{
+    const dynarr_t* enemies = &model->entities[ENEMY_ENTITY];
+    if (current.type == PLAYER_ENTITY && enemies->size == 0)
+    {
+        return current;
+    }
+    else if (current.type == PLAYER_ENTITY && enemies->size > 0)
+    {
+        const ent_enemy_t* enemy = (ent_enemy_t*)dynarr_get(enemies, 0);
+        return model->map.entities[enemy->mapid];
+    }
+    else if (current.type == ENEMY_ENTITY && current.id < (enemies->size - 1)) 
+    {
+        const ent_enemy_t* enemy = (ent_enemy_t*)dynarr_get(enemies, current.id + 1);
+        return model->map.entities[enemy->mapid];
+    }
+    else if (current.type == ENEMY_ENTITY)
+    {
+        const ent_player_t* player = GET_PLAYER(model);
+        return model->map.entities[player->mapid];
     }
 
-    return 1;
+    assert(false);
 }
 
-void do_turn(ent_enemy_t* enemy, map_t* map)
+entity_t do_action(model_t* model, const action_t* action)
 {
+    if (action->type == ACTION_TYPE_NO_ACTION_PRODUCED)
+    {
+        return action->entity;
+    }
+    else if (action->type == ACTION_TYPE_IDLE)
+    {
+        return next_entity_for_action(model, action->entity);
+    }
+    else if (action->type == ACTION_TYPE_MOVE_TO)
+    {
+        ivec_t current_pos = action->map_pos_idx[0]; 
+        ivec_t next_pos = action->map_pos_idx[1];
+        if (action->entity.type == PLAYER_ENTITY)
+        {
+            ent_player_t* player = GET_PLAYER(model);
+            ivec_t delta = ivec_sub(next_pos, current_pos); 
+            if (delta.x > 0) player->texture_id = TEXTURE_ID_PLAYER_1;
+            else if (delta.x < 0) player->texture_id = TEXTURE_ID_PLAYER_2;
+        }
+        int result = move_entity(model, current_pos, next_pos);
+        return result ? next_entity_for_action(model, action->entity) : action->entity;
+    }
+    else if (action->type == ACTION_TYPE_SMARTMOVE_TO)
+    {
+        int result = map_find_path(action->map_pos_idx[0], action->map_pos_idx[1], &model->map, &global_open_set, &global_path_links, &global_g_score, &global_open_set_pops_tracker, &global_path);
+        if (!result) return action->entity;
+        if (global_path.size < 2) return action->entity;
+        int next_map_idx = GET_AS(int, dynarr_get(&global_path, global_path.size - 2));
+
+        ivec_t current_pos = action->map_pos_idx[0]; 
+        ivec_t next_pos = map_get_pos(&model->map, next_map_idx);
+        result = move_entity(model, current_pos, next_pos);
+        
+        if (result && (action->entity.type == PLAYER_ENTITY))
+        {
+            ent_player_t* player = GET_PLAYER(model);
+            ivec_t delta = ivec_sub(next_pos, current_pos); 
+            if (delta.x > 0) player->texture_id = TEXTURE_ID_PLAYER_1;
+            else if (delta.x < 0) player->texture_id = TEXTURE_ID_PLAYER_2;
+        }
+
+        return result ? next_entity_for_action(model, action->entity) : action->entity;
+    }
+    assert(false);
 }
 
 #endif // SIMULATION_H

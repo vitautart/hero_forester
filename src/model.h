@@ -42,6 +42,7 @@ typedef enum
 
 #define EMPTY_ENTITY (entity_t) { .type =UNKNOWN_ENTITY, .id = -1  }
 #define GET_PLAYER(model) (ent_player_t*)dynarr_get(&model->entities[PLAYER_ENTITY], 0)
+#define GET_ENEMY(model, entity) (ent_enemy_t*)dynarr_get(&model->entities[entity.type], entity.id)
 
 typedef struct entity_t
 {
@@ -287,8 +288,6 @@ int map_find_path(ivec_t start, ivec_t end, const map_t* map, minheap_t* open_se
         for (int i = 0; i < 4; i++)
         {
             ivec_t ngbr_pos = neighbors[i];
-            /*if (ngbr_pos.x < 0 || ngbr_pos.x >= map->width 
-                    || ngbr_pos.y < 0 || ngbr_pos.y >= map->height) continue;*/
             if (map_check_pos_outside(map, ngbr_pos)) continue;
 
             int ngbr_idx = map_get_idx(map, ngbr_pos);
