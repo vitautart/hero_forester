@@ -55,18 +55,13 @@ int player_turn(model_t* model, user_state_t* user_state, Camera2D camera)
         {
             // TODO: add check for obstacle mouse position
             ivec_t mouse_pos = map_get_mouse_pos(camera);
-            printf("cursor pressed: %i %i\n", mouse_pos.x, mouse_pos.y);
             if (map_check_pos_outside(&model->map, mouse_pos)) return 0;
-            printf("cursor inside map\n");
             ivec_t current = map_get_pos(&model->map, player->mapid);
             int result = map_find_path(current, mouse_pos, &model->map, &global_open_set, &global_path_links, &global_g_score, &global_open_set_pops_tracker, &global_path);
 
-            printf("result is: %i\n", result);
             if (!result) return 0;
 
-            printf("global_path length: %i\n", global_path.size);
             int next_map_idx = GET_AS(int, dynarr_get(&global_path, global_path.size - 2));
-            printf("next_map_idx: %i\n", next_map_idx);
             return move_entity(model, current, map_get_pos(&model->map, next_map_idx));
         }
         if (IsKeyPressed(KEY_LEFT))

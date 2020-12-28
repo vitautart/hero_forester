@@ -257,7 +257,7 @@ int map_find_path(ivec_t start, ivec_t end, const map_t* map, minheap_t* open_se
     qnode_t current;
     while(minheap_pop(open_set, &current))
     {
-        if (SAFETY_AGAINST_WHILE > 100000) return 0; 
+        if (SAFETY_AGAINST_WHILE > 100000) return 0;
         SAFETY_AGAINST_WHILE++;
         // TODO: RECONSIDER THIS
         // NOT SURE ABOUT THIS CHECK
@@ -293,7 +293,7 @@ int map_find_path(ivec_t start, ivec_t end, const map_t* map, minheap_t* open_se
 
             int ngbr_idx = map_get_idx(map, ngbr_pos);
 
-            if (!bitset_get(&map->obstacles, ngbr_idx)) continue;
+            if (bitset_get(&map->obstacles, ngbr_idx)) continue;
 
             int g_score_current_value;
             assert(hashmap_get(g_score, current_idx, &g_score_current_value));
