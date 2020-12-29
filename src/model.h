@@ -220,63 +220,53 @@ uint16_t entity_get_texture_id (const model_t* model, entity_t entity)
     return GET_AS(uint16_t, (dynarr_get(&model->entities[entity.type], entity.id) + sizeof(int)));
 }
 
-static inline int manhatten_heuristic(ivec_t p1, ivec_t p2)
+static inline int manhatten_distance(ivec_t p1, ivec_t p2)
 {
     return abs(p1.x - p2.x) + abs(p1.y - p2.y);
 }
 
-void reconstruct_path(const hashmap_t* path_links, int start_idx, int end_idx, dynarr_t* path)
+static minheap_t global_open_set;
+static hashmap_t global_path_links;
+static hashmap_t global_g_score;
+static dynarr_t global_path;
+
+void reconstruct_path(int start_idx, int end_idx, dynarr_t* path)
 {
     dynarr_add(path, &end_idx);
     int current = end_idx;
     int neighbore;
     while (current != start_idx)
     {
-        assert(hashmap_get(path_links, current, &neighbore));
+        assert(hashmap_get(&global_path_links, current, &neighbore));
         current = neighbore;
         dynarr_add(path, &current);
     }
 }
 
-int map_find_path(ivec_t start, ivec_t end, const map_t* map, minheap_t* open_set, hashmap_t* path_links, hashmap_t* g_score, bitset_t* open_set_pops_tracker, dynarr_t* path)
+int map_find_path(ivec_t start, ivec_t end, int radius, const map_t* map, dynarr_t* path)
 {
-    // TODO: remove this to more convenient way that finds reachability of end.
-    int SAFETY_AGAINST_WHILE = 0;
-
-    minheap_clear(open_set);
-    hashmap_clear(path_links);
-    hashmap_clear(g_score);
-    bitset_clear(open_set_pops_tracker);
+    minheap_clear(&global_open_set);
+    hashmap_clear(&global_path_links);
+    hashmap_clear(&global_g_score);
     dynarr_clear(path);
 
     int end_idx = map_get_idx(map, end);
     int start_idx = map_get_idx(map, start);
 
-    minheap_push(open_set, (qnode_t){ manhatten_heuristic(start, start), start_idx});
-    hashmap_add_or_replace(g_score, (qnode_t){start_idx, 0});
+    minheap_push(&global_open_set, (qnode_t){ manhatten_distance(start, start), start_idx});
+    hashmap_add_or_replace(&global_g_score, (qnode_t){start_idx, 0});
 
     qnode_t current;
-    while(minheap_pop(open_set, &current))
+    while(minheap_pop(&global_open_set, &current))
     {
-        if (SAFETY_AGAINST_WHILE > 100000) return 0;
-        SAFETY_AGAINST_WHILE++;
-        // TODO: RECONSIDER THIS
-        // NOT SURE ABOUT THIS CHECK
-        // IT IS HERE BECAUSE WE NEED AN OPEN_SET,
-        // THAT CONTAINS UNIQUE VALUES IN IT'S QNODE ELEMENTS
-        // BUT IT ISN'T
-        // SO WE FAKE THIS WITH ADDITIONAL BITSET OPEN_SET_POPS_TRACKER
-        if(bitset_get(open_set_pops_tracker, current.value)) continue;
-        bitset_set(open_set_pops_tracker, current.value, 1);
-
-        if (current.value == end_idx) 
-        {
-            reconstruct_path(path_links, start_idx, end_idx, path);
-            return 1;
-        }
-
         int current_idx = current.value;
         ivec_t current_pos = map_get_pos(map, current_idx);
+
+        if (manhatten_distance(current_pos, end) <= radius) 
+        {
+            reconstruct_path(start_idx, current_idx, path);
+            return 1;
+        }
 
         ivec_t neighbors[4];
         {
@@ -295,21 +285,21 @@ int map_find_path(ivec_t start, ivec_t end, const map_t* map, minheap_t* open_se
             if (bitset_get(&map->obstacles, ngbr_idx)) continue;
 
             int g_score_current_value;
-            assert(hashmap_get(g_score, current_idx, &g_score_current_value));
+            assert(hashmap_get(&global_g_score, current_idx, &g_score_current_value));
             int tentative_score = g_score_current_value + 1;
 
             int g_score_ngbr_value;
-            int g_score_result = hashmap_get(g_score, ngbr_idx, &g_score_ngbr_value);
+            int g_score_result = hashmap_get(&global_g_score, ngbr_idx, &g_score_ngbr_value);
             if (g_score_result == 0 || tentative_score < g_score_ngbr_value)
             {
-                hashmap_add_or_replace(path_links, (qnode_t){ngbr_idx, current_idx});
-                hashmap_add_or_replace(g_score, (qnode_t){ngbr_idx, tentative_score});
+                hashmap_add_or_replace(&global_path_links, (qnode_t){ngbr_idx, current_idx});
+                hashmap_add_or_replace(&global_g_score, (qnode_t){ngbr_idx, tentative_score});
 
-                int f_score = tentative_score + manhatten_heuristic(start, ngbr_pos);
+                int f_score = tentative_score + manhatten_distance(end, ngbr_pos);
 
                 // TODO: RECONSIDER THIS
                 // SEE FIRST TODO IN THIS FUNCTION
-                minheap_push(open_set, (qnode_t){f_score, ngbr_idx});
+                minheap_push(&global_open_set, (qnode_t){f_score, ngbr_idx});
             }
         }
     }

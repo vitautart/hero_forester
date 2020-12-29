@@ -4,7 +4,6 @@
 #include "globals.h"
 #include "common.h"
 #include "model.h"
-#include "presentation.h" // TODO: something wrong with this dependencies
 #include "raylib.h"
 #include <stdio.h>
 
@@ -15,6 +14,7 @@ typedef enum
     ACTION_TYPE_IDLE,
     ACTION_TYPE_MOVE_TO,
     ACTION_TYPE_SMARTMOVE_TO,
+    ACTION_TYPE_SHOOT,
     ACTION_TYPE_NO_ACTION_PRODUCED
 } action_type_t;
 
@@ -25,63 +25,46 @@ typedef struct action_t
     ivec_t map_pos_idx[2];
 } action_t;
 
-static minheap_t global_open_set;
-static hashmap_t global_path_links;
-static hashmap_t global_g_score;
-static bitset_t global_open_set_pops_tracker;
-static dynarr_t global_path;
-static int global_current_id;
-
-action_t produce_user_action(model_t* model, entity_t entity, user_state_t* user_state, Camera2D camera)
+ivec_t nav_path_get_after_current(const map_t* map, dynarr_t* path)
 {
-    ent_player_t* player = GET_PLAYER(model);
+    int next_map_idx = GET_AS(int, dynarr_get(&global_path, global_path.size - 2));
+    return map_get_pos(map, next_map_idx);
+}
 
-    if (user_state->command_mode == AUTO_MOVE_SHOOT_USER_MODE 
-        || user_state->command_mode == MOVE_USER_MODE)
+action_t get_desicion_for_enemy_with_rifle(model_t* model, entity_t entity)
+{
+    action_t action = {.entity = entity};
+    ent_enemy_t* enemy = GET_ENEMY(model, entity);
+    ent_player_t* player = GET_PLAYER(model);
+    ivec_t player_pos = map_get_pos(&model->map, player->mapid);
+    ivec_t enemy_pos = map_get_pos(&model->map, enemy->mapid);
+    int can_get_player = map_find_path(enemy_pos, player_pos, 1, &model->map, &global_path);
+    if (!can_get_player)
     {
-        if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
-        {
-            ivec_t mouse_pos = map_get_mouse_pos(camera);
-            if (map_check_pos_outside(&model->map, mouse_pos)) return NO_ACTION_PRODUCED(entity);
-            ivec_t current = map_get_pos(&model->map, player->mapid);
-            return (action_t) {.type = ACTION_TYPE_SMARTMOVE_TO, .entity = entity, .map_pos_idx = {current, mouse_pos}};
-        }
-        else if (IsKeyPressed(KEY_LEFT))
-        {
-            ivec_t current = map_get_pos(&model->map, player->mapid);
-            ivec_t next = ivec_add(current, (ivec_t){-1, 0});
-            return (action_t) {.type = ACTION_TYPE_MOVE_TO, .entity = entity, .map_pos_idx = {current, next}};
-        }
-        else if (IsKeyPressed(KEY_RIGHT))
-        {
-            ivec_t current = map_get_pos(&model->map, player->mapid);
-            ivec_t next = ivec_add(current, (ivec_t){1, 0});
-            return (action_t) {.type = ACTION_TYPE_MOVE_TO, .entity = entity, .map_pos_idx = {current, next}};
-        }
-        else if (IsKeyPressed(KEY_UP))
-        {
-            ivec_t current = map_get_pos(&model->map, player->mapid);
-            ivec_t next = ivec_add(current, (ivec_t){0, -1});
-            return (action_t) {.type = ACTION_TYPE_MOVE_TO, .entity = entity, .map_pos_idx = {current, next}};
-        }
-        else if (IsKeyPressed(KEY_DOWN))    
-        {
-            ivec_t current = map_get_pos(&model->map, player->mapid);
-            ivec_t next = ivec_add(current, (ivec_t){0, 1});
-            return (action_t) {.type = ACTION_TYPE_MOVE_TO, .entity = entity, .map_pos_idx = {current, next}};
-        }
+        action.type = ACTION_TYPE_IDLE;
+        return action;
     }
 
-    return NO_ACTION_PRODUCED(entity);
+    if (manhatten_distance(player_pos, enemy_pos) > 4)
+    {   
+        ivec_t next_pos = nav_path_get_after_current(&model->map, &global_path);
+        action.type = ACTION_TYPE_MOVE_TO;
+        action.map_pos_idx[0] = enemy_pos;
+        action.map_pos_idx[1] = next_pos;
+    }
+    else
+    {
+        // TODO: this is just temporary
+        // we will change this to ACTION_TYPE_SHOOT
+        action.type = ACTION_TYPE_IDLE;
+    }
+
+    return action;
 }
 
 action_t produce_ai_action(model_t* model, entity_t entity)
 {
-    return (action_t) 
-    {
-        .type = ACTION_TYPE_IDLE,
-        .entity = entity
-    };
+    return get_desicion_for_enemy_with_rifle(model, entity);
 }
 
 entity_t next_entity_for_action(const model_t* model, entity_t current)
@@ -136,13 +119,12 @@ entity_t do_action(model_t* model, const action_t* action)
     }
     else if (action->type == ACTION_TYPE_SMARTMOVE_TO)
     {
-        int result = map_find_path(action->map_pos_idx[0], action->map_pos_idx[1], &model->map, &global_open_set, &global_path_links, &global_g_score, &global_open_set_pops_tracker, &global_path);
+        int result = map_find_path(action->map_pos_idx[0], action->map_pos_idx[1], 0, &model->map, &global_path);
         if (!result) return action->entity;
         if (global_path.size < 2) return action->entity;
-        int next_map_idx = GET_AS(int, dynarr_get(&global_path, global_path.size - 2));
-
+        
         ivec_t current_pos = action->map_pos_idx[0]; 
-        ivec_t next_pos = map_get_pos(&model->map, next_map_idx);
+        ivec_t next_pos = nav_path_get_after_current(&model->map, &global_path);
         result = move_entity(model, current_pos, next_pos);
         
         if (result && (action->entity.type == PLAYER_ENTITY))

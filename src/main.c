@@ -5,6 +5,7 @@
 #include "render.h"
 #include "simulation.h"
 #include "sync_camera.h"
+#include "useractions.h"
 
 //#define OLDSIMULATION
 
@@ -30,7 +31,6 @@ int main (void)
     SetTargetFPS(60);
     while(!WindowShouldClose())
     {    
-
         // TODO:    hardcoded default value for player active mode MOVE_USER_MODE is not OK.
         //          we must change this to some active tool in user ui that corresponds to certain user mode.
         user_state.command_mode = current_entity.type != PLAYER_ENTITY ? 

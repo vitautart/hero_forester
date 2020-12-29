@@ -13,7 +13,6 @@ void globals_allocate(const map_t* map)
     global_open_set = minheap_allocate(10000);
     global_path_links = hashmap_allocate(128, 64);
     global_g_score = hashmap_allocate(128, 64);
-    global_open_set_pops_tracker = bitset_allocate(map->height * map->width);
     global_path = dynarr_allocate(sizeof(qnode_t), 0, 128);
 }
 
@@ -22,14 +21,11 @@ void globals_free()
     minheap_free(&global_open_set);
     hashmap_free(&global_path_links);
     hashmap_free(&global_g_score);
-    bitset_free(&global_open_set_pops_tracker);
     dynarr_free(&global_path);
 }
 
 void generate_location(int width, int height, model_t* model)
 {
-
-
     map_t* map = &model->map;
     map_allocate(&model->map, width, height);
     model->entities[PLAYER_ENTITY] = dynarr_allocate(sizeof(ent_player_t), 0, 1);
