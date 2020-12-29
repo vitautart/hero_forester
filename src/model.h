@@ -84,6 +84,19 @@ typedef struct model_t
     dynarr_t entities[ENTITY_TYPES_COUNT];
 } model_t;
 
+#define DEBUG_RENDER
+// GLOBAL CONTAINERS
+static minheap_t global_open_set;
+static hashmap_t global_path_links;
+static hashmap_t global_g_score;
+static dynarr_t global_path;
+#ifdef DEBUG_RENDER
+static dynarr_t global_debug_red_map_cell_pos;
+static dynarr_t global_debug_blue_map_cell_pos;
+static dynarr_t global_debug_grey_map_cell_pos;
+static dynarr_t global_debug_yellow_map_cell_pos;
+#endif
+
 int entity_get_mapid (const model_t* model, entity_t entity);
 void entity_set_mapid (model_t* model, entity_t entity, int mapid);
 int map_get_idx(const map_t * map, ivec_t pos);
@@ -225,10 +238,6 @@ static inline int manhatten_distance(ivec_t p1, ivec_t p2)
     return abs(p1.x - p2.x) + abs(p1.y - p2.y);
 }
 
-static minheap_t global_open_set;
-static hashmap_t global_path_links;
-static hashmap_t global_g_score;
-static dynarr_t global_path;
 
 void reconstruct_path(int start_idx, int end_idx, dynarr_t* path)
 {
@@ -305,5 +314,85 @@ int map_find_path(ivec_t start, ivec_t end, int radius, const map_t* map, dynarr
     }
     return 0;
 }
+
+void bresenham_low(ivec_t v0, ivec_t v1, dynarr_t* line)
+{
+    ivec_t delta = ivec_sub(v1, v0);
+    int inc_y = 1;
+    if(delta.y < 0)
+    {
+        inc_y = -1;
+        delta.y = -delta.y;
+    }
+    int diff = 2 * delta.y - delta.x;
+
+    int current_y = v0.y;
+
+    int delta_y_minus_x = delta.y - delta.x;
+    for(int current_x = v0.x; current_x <= v1.x; current_x++)
+    {
+        ivec_t current_pos = {current_x, current_y};
+        dynarr_add(line, &current_pos);
+        if (diff > 0)
+        {
+            current_y += inc_y;
+            diff += 2 * delta_y_minus_x;
+        }
+        else
+        {
+            diff += 2 * delta.y;
+        }
+    }
+}
+
+void bresenham_high(ivec_t v0, ivec_t v1, dynarr_t* line)
+{
+    ivec_t delta = ivec_sub(v1, v0);
+    int inc_x = 1;
+    if(delta.x < 0)
+    {
+        inc_x = -1;
+        delta.x = -delta.x;
+    }
+    int diff = 2 * delta.x - delta.y;
+
+    int current_x = v0.x;
+
+    int delta_x_minus_y = delta.x - delta.y;
+    for(int current_y = v0.y; current_y <= v1.y; current_y++)
+    {
+        ivec_t current_pos = {current_x, current_y};
+        dynarr_add(line, &current_pos);
+        if (diff > 0)
+        {
+            current_x += inc_x;
+            diff += 2 * delta_x_minus_y;
+        }
+        else
+        {
+            diff += 2 * delta.x;
+        }
+    }
+}
+
+void bresenham(ivec_t v0, ivec_t v1, dynarr_t* line)
+{
+    if (abs(v1.y - v0.y) < abs(v1.x - v0.x))
+    {
+        if (v0.x > v1.x) bresenham_low(v1, v0, line);
+        else bresenham_low(v0, v1, line);
+    }
+    else
+    {
+        if (v0.y > v1.y) bresenham_high(v1, v0, line);
+        else bresenham_high(v0, v1, line);
+    }
+}
+
+// returns last element
+/*ivec_t map_raycast(const map_t* map, ivec_t start, ivec_t end)
+{
+
+}*/
 
 #endif // MODEL_H

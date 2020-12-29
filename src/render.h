@@ -5,10 +5,13 @@
 #include "presentation.h"
 #include "model.h"
 #include "raylib.h"
+#include <stdio.h>
 #include <sys/types.h>
 
 iaabb_t camera_get_map_boundaries(Camera2D camera, int screen_w, int screen_h);
 iaabb_t calculate_draw_bounds(Camera2D camera, const map_t* map, int screen_w, int screen_h, int safety_extent);
+void render_cell_with_rectangle(ivec_t pos, int has_border,
+        int has_fill, int border_thickness, Color fill_color, Color border_color);
 void render(Camera2D camera, const model_t* model, const user_state_t* user_state, const Texture2D *textures, int screen_w, int screen_h);
 void render_ground(const map_t * map, const Texture2D* textures, const iaabb_t* bounds);
 void render_entities(const model_t* model, const Texture2D* textures, const iaabb_t* bounds);
@@ -17,6 +20,35 @@ void render_ingame_ui(Camera2D camera, const model_t* model, const user_state_t*
 void render_cell_under_cursor(Camera2D camera, const model_t* model,
         const user_state_t* user_state);
 void render_ui();
+
+#ifdef DEBUG_RENDER
+void render_debug_cells(const map_t * map)
+{
+    for (int i = 0; i < global_debug_red_map_cell_pos.size; i++)
+    {
+        ivec_t pos = GET_AS(ivec_t, dynarr_get(&global_debug_red_map_cell_pos, i));
+        render_cell_with_rectangle(pos, 0, 1, 0, (Color){200, 0, 0, 100}, (Color){});
+    }
+
+    for (int i = 0; i < global_debug_blue_map_cell_pos.size; i++)
+    {
+        ivec_t pos = GET_AS(ivec_t, dynarr_get(&global_debug_blue_map_cell_pos, i));
+        render_cell_with_rectangle(pos, 0, 1, 0, (Color){0, 0, 200, 100}, (Color){});
+    }
+    
+    for (int i = 0; i < global_debug_grey_map_cell_pos.size; i++)
+    {
+        ivec_t pos = GET_AS(ivec_t, dynarr_get(&global_debug_grey_map_cell_pos, i));
+        render_cell_with_rectangle(pos, 0, 1, 0, (Color){100, 100, 100, 200}, (Color){});
+    }
+
+    for (int i = 0; i < global_debug_yellow_map_cell_pos.size; i++)
+    {
+        ivec_t pos = GET_AS(ivec_t, dynarr_get(&global_debug_yellow_map_cell_pos, i));
+        render_cell_with_rectangle(pos, 0, 1, 0, (Color){240, 252, 83, 100}, (Color){});
+    }
+}
+#endif
 
 void render_cell_with_rectangle(ivec_t pos, int has_border,
         int has_fill, int border_thickness, Color fill_color, Color border_color)
@@ -35,7 +67,6 @@ void render_cell_with_rectangle(ivec_t pos, int has_border,
 void render_cell_under_cursor(Camera2D camera, const model_t* model,
         const user_state_t* user_state)
 {
-    //ivec_t pos = world_to_map(GetScreenToWorld2D(GetMousePosition(), camera));
     ivec_t pos = map_get_mouse_pos(camera);
     if (user_state->command_mode == MOVE_USER_MODE)
     {
@@ -84,6 +115,9 @@ void render(Camera2D camera, const model_t* model, const user_state_t* user_stat
     render_entities(model, textures, &bounds);
     render_effects();
     render_ingame_ui(camera, model, user_state);
+#ifdef DEBUG_RENDER
+    render_debug_cells(&model->map);
+#endif
     EndMode2D();
 
     render_ui();

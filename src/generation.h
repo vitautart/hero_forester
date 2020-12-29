@@ -14,6 +14,12 @@ void globals_allocate(const map_t* map)
     global_path_links = hashmap_allocate(128, 64);
     global_g_score = hashmap_allocate(128, 64);
     global_path = dynarr_allocate(sizeof(qnode_t), 0, 128);
+#ifdef DEBUG_RENDER
+    global_debug_red_map_cell_pos = dynarr_allocate(sizeof(ivec_t), 0, 128);
+    global_debug_blue_map_cell_pos = dynarr_allocate(sizeof(ivec_t), 0, 128);
+    global_debug_grey_map_cell_pos = dynarr_allocate(sizeof(ivec_t), 0, 128);
+    global_debug_yellow_map_cell_pos = dynarr_allocate(sizeof(ivec_t), 0, 128);
+#endif
 }
 
 void globals_free()
@@ -22,6 +28,12 @@ void globals_free()
     hashmap_free(&global_path_links);
     hashmap_free(&global_g_score);
     dynarr_free(&global_path);
+#ifdef DEBUG_RENDER
+    dynarr_free(&global_debug_red_map_cell_pos);
+    dynarr_free(&global_debug_blue_map_cell_pos);
+    dynarr_free(&global_debug_grey_map_cell_pos);
+    dynarr_free(&global_debug_yellow_map_cell_pos);
+#endif
 }
 
 void generate_location(int width, int height, model_t* model)

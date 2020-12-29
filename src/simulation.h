@@ -123,7 +123,18 @@ entity_t do_action(model_t* model, const action_t* action)
         if (!result) return action->entity;
         if (global_path.size < 2) return action->entity;
         
-        ivec_t current_pos = action->map_pos_idx[0]; 
+        ivec_t current_pos = action->map_pos_idx[0];
+
+#ifdef DEBUG_RENDER
+        dynarr_clear(&global_debug_grey_map_cell_pos);
+        for(int i = 0; i < global_path.size; i++)
+        {
+            int debug_pos_id = GET_AS(int, dynarr_get(&global_path, i));
+            ivec_t debug_pos = map_get_pos(&model->map, debug_pos_id);
+            dynarr_add(&global_debug_grey_map_cell_pos, &debug_pos);
+        }
+#endif
+
         ivec_t next_pos = nav_path_get_after_current(&model->map, &global_path);
         result = move_entity(model, current_pos, next_pos);
         
