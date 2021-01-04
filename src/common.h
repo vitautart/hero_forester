@@ -93,6 +93,7 @@ int dynarr_remove_swap(dynarr_t* arr, int idx);
 void dynarr_remove(dynarr_t* arr, int idx);
 void dynarr_set(dynarr_t* arr, int idx, void* value);
 void* dynarr_get(const dynarr_t* arr, int idx);
+void* dynarr_get_last(const dynarr_t* arr);
 void dynarr_swap(dynarr_t* arr, int idx_1, int idx_2);
 void dynarr_clear(dynarr_t* arr);
 void dynarr_free(dynarr_t* arr);

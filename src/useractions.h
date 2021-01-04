@@ -1,6 +1,7 @@
 #ifndef USERACTIONS_H
 #define USERACTIONS_H
 
+#include "common.h"
 #include "simulation.h"
 #include "presentation.h"
 
@@ -17,6 +18,18 @@ action_t produce_user_action(model_t* model, entity_t entity, user_state_t* user
             if (map_check_pos_outside(&model->map, mouse_pos)) return NO_ACTION_PRODUCED(entity);
             ivec_t current = map_get_pos(&model->map, player->mapid);
             return (action_t) {.type = ACTION_TYPE_SMARTMOVE_TO, .entity = entity, .map_pos_idx = {current, mouse_pos}};
+        }
+        else if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON))
+        {
+            ivec_t mouse_pos = map_get_mouse_pos(camera);
+            if (map_check_pos_outside(&model->map, mouse_pos)) return NO_ACTION_PRODUCED(entity);
+            ivec_t current = map_get_pos(&model->map, player->mapid);
+            return (action_t) {
+                .type = ACTION_TYPE_SHOOT,
+                .entity = entity,
+                .map_pos_idx = {current, mouse_pos},
+                .value = { .asint =  20 }
+            };
         }
         else if (IsKeyPressed(KEY_LEFT))
         {

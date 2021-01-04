@@ -1,13 +1,12 @@
 #ifndef MODEL_H
 #define MODEL_H
 
-#include "common.h"
+#include "globals.h"
 
+#include <stddef.h>
 #include <stdint.h>
 #include <raylib.h>
 #include <raymath.h>
-
-#define ENTITY_TYPES_COUNT 3
 
 typedef enum
 {
@@ -23,12 +22,12 @@ typedef struct user_state_t
     user_command_mode_t command_mode;
 } user_state_t;
 
-
 typedef enum
 {
-    PLAYER_ENTITY = 0,
-    ENEMY_ENTITY = 1,
-    TREE_ENTITY = 2,
+    PLAYER_ENTITY,
+    ENEMY_ENTITY,
+    TREE_ENTITY,
+    ENTITY_TYPE_LENGTH, // allways keep this to the end of list of valid enums 
     UNKNOWN_ENTITY = 1 << 31
 } entity_type_t;
 
@@ -44,6 +43,18 @@ typedef enum
 #define GET_PLAYER(model) (ent_player_t*)dynarr_get(&model->entities[PLAYER_ENTITY], 0)
 #define GET_ENEMY(model, entity) (ent_enemy_t*)dynarr_get(&model->entities[entity.type], entity.id)
 
+typedef enum 
+{
+    COMPONENT_BIT_FLAG_HEALTH = 1,
+} component_bit_flag_t;
+
+typedef enum
+{
+    COMPONENT_SET_PLAYER = 0 | COMPONENT_BIT_FLAG_HEALTH,
+    COMPONENT_SET_ENEMY = 0 | COMPONENT_BIT_FLAG_HEALTH,
+    COMPONENT_SET_TREE = 0,
+} component_set_t;
+
 typedef struct entity_t
 {
     entity_type_t type;
@@ -54,18 +65,23 @@ typedef struct ent_player_t
 {
     int mapid;
     uint16_t texture_id; // not move this position of this field
+    entity_type_t type;
+    int health;
 } ent_player_t;
 
 typedef struct ent_enemy_t
 {
     int mapid;
     uint16_t texture_id; // not move this position of this field
+    entity_type_t type;
+    int health;
 } ent_enemy_t;
 
 typedef struct ent_tree_t
 {
     int mapid;
     uint16_t texture_id; // not move this position of this field
+    entity_type_t type;
 } ent_tree_t;
 
 typedef struct map_t
@@ -81,21 +97,9 @@ typedef struct map_t
 typedef struct model_t
 {
     map_t map;
-    dynarr_t entities[ENTITY_TYPES_COUNT];
+    dynarr_t entities[ENTITY_TYPE_LENGTH];
+    component_set_t components[ENTITY_TYPE_LENGTH];
 } model_t;
-
-#define DEBUG_RENDER
-// GLOBAL CONTAINERS
-static minheap_t global_open_set;
-static hashmap_t global_path_links;
-static hashmap_t global_g_score;
-static dynarr_t global_path;
-#ifdef DEBUG_RENDER
-static dynarr_t global_debug_red_map_cell_pos;
-static dynarr_t global_debug_blue_map_cell_pos;
-static dynarr_t global_debug_grey_map_cell_pos;
-static dynarr_t global_debug_yellow_map_cell_pos;
-#endif
 
 int entity_get_mapid (const model_t* model, entity_t entity);
 void entity_set_mapid (model_t* model, entity_t entity, int mapid);
@@ -160,44 +164,147 @@ void map_free (map_t * map)
     bitset_free(&map->obstacles);
 }
 
-void* add_entity(model_t* model, ivec_t pos, entity_type_t type)
+void model_allocate(model_t* model, int width, int height)
+{
+    int enemies_expect_count = 32;
+    int tree_expect_count = width * height;
+
+    map_allocate(&model->map, width, height);
+
+    model->components[PLAYER_ENTITY] = COMPONENT_SET_PLAYER;
+    model->components[ENEMY_ENTITY] = COMPONENT_SET_ENEMY;
+    model->components[TREE_ENTITY] = COMPONENT_SET_TREE;
+
+    model->entities[PLAYER_ENTITY] = dynarr_allocate(sizeof(ent_player_t), 0, 1);
+    model->entities[ENEMY_ENTITY] = dynarr_allocate(sizeof(ent_enemy_t), 0, enemies_expect_count);
+    model->entities[TREE_ENTITY] = dynarr_allocate(sizeof(ent_enemy_t), 0, tree_expect_count);
+}
+
+void model_free(model_t* model)
+{
+    for (int i = 0; i < ENTITY_TYPE_LENGTH; i++)
+        dynarr_free(&model->entities[i]);
+}
+
+#define CREATE_GETTER_FOR_MEMBER(type, member, ref_type) static inline type entity_get_##member##_void (void* entity_ptr) { return *(type*)(entity_ptr + offsetof(ref_type, member)); }
+
+#define CREATE_SETTER_FOR_MEMBER(type, member, ref_type) static inline void entity_set_##member##_void (void* entity_ptr, type member){ type* ptr = (type*)(entity_ptr + offsetof(ref_type, member)); *ptr = member; }
+
+/****** MAPID GETTERS SETTERS ******/
+
+CREATE_GETTER_FOR_MEMBER(int, mapid, ent_player_t)    
+CREATE_SETTER_FOR_MEMBER(int, mapid, ent_player_t)
+
+int entity_get_mapid (const model_t* model, entity_t entity)
+{
+    return entity_get_mapid_void(dynarr_get(&model->entities[entity.type], entity.id));
+}
+
+void entity_set_mapid (model_t* model, entity_t entity, int mapid)
+{
+    entity_set_mapid_void(dynarr_get(&model->entities[entity.type], entity.id), mapid);
+}
+
+/****** TEXTURE_ID GETTERS SETTERS ******/
+
+CREATE_GETTER_FOR_MEMBER(uint16_t, texture_id, ent_player_t)    
+CREATE_SETTER_FOR_MEMBER(uint16_t, texture_id, ent_player_t)
+
+uint16_t entity_get_texture_id (const model_t* model, entity_t entity)
+{
+    return entity_get_texture_id_void(dynarr_get(&model->entities[entity.type], entity.id));
+}
+
+/****** TYPE GETTERS SETTERS ******/
+
+CREATE_GETTER_FOR_MEMBER(entity_type_t, type, ent_player_t)    
+CREATE_SETTER_FOR_MEMBER(entity_type_t, type, ent_player_t)
+
+entity_type_t entity_get_type (const model_t* model, entity_t entity)
+{
+    return entity_get_type_void(dynarr_get(&model->entities[entity.type], entity.id));
+}
+
+void entity_set_type (model_t* model, entity_t entity, entity_type_t type)
+{
+    entity_set_type_void(dynarr_get(&model->entities[entity.type], entity.id), type);
+}
+
+/****** HEALTH GETTERS SETTERS ******/
+
+
+CREATE_GETTER_FOR_MEMBER(int, health, ent_player_t)
+CREATE_SETTER_FOR_MEMBER(int, health, ent_player_t)
+
+int entity_get_health (const model_t* model, entity_t entity)
+{
+    return GET_AS(int, dynarr_get(&model->entities[entity.type], entity.id));
+}
+
+void entity_set_health (model_t* model, entity_t entity, int health)
+{
+    int* ptr = (int*)dynarr_get(&model->entities[entity.type], entity.id);
+    *ptr = health;
+}
+
+/*******************/
+void* add_entity (model_t* model, ivec_t pos, entity_type_t type)
 {
     int idx = map_get_idx(&model->map, pos);
     dynarr_t *arr = &model->entities[type];
-    dynarr_increment(arr);
+    assert(dynarr_increment(arr) != COM_ERR);
+
+    void* entity_ptr = dynarr_get_last(arr);
 
     entity_t* e = &model->map.entities[idx];
     e->type = type;
     e->id = arr->size - 1;
-    entity_set_mapid(model, *e, idx);
+    //entity_set_mapid(model, *e, idx);
+    entity_set_mapid_void(entity_ptr, idx);
+    entity_set_type_void(entity_ptr, type);
 
     bitset_set(&model->map.obstacles, idx, 1);
 
     return dynarr_get(arr, e->id);
 }
 
-void remove_entity(model_t* model, map_t* map, ivec_t pos)
+void remove_entity(model_t* model, ivec_t pos)
 {
-    int idx = map_get_idx(map, pos);
-    entity_t entity = map->entities[idx];
-    map->entities[idx] = EMPTY_ENTITY;
-    bitset_set(&map->obstacles, idx, 0);
+    int idx = map_get_idx(&model->map, pos);
+    entity_t entity = model->map.entities[idx];
+    model->map.entities[idx] = EMPTY_ENTITY;
+    bitset_set(&model->map.obstacles, idx, 0);
 
     dynarr_t *arr = &model->entities[entity.type];
     if (dynarr_remove_swap(arr, entity.id)) // if swap was present than TRUE
     {
         int mapid = entity_get_mapid(model, entity);
-        map->entities[mapid].id = entity.id;
+        model->map.entities[mapid].id = entity.id;
     }
+}
+
+static inline entity_t model_get_entity(const model_t* model, void* entity_data)
+{
+    int map_id = entity_get_mapid_void(entity_data);
+    return model->map.entities[map_id];
+}
+
+static inline void* model_get_entity_data(const model_t* model, entity_t entity)
+{
+    return dynarr_get(&model->entities[entity.type], entity.id);
+}
+
+static inline void* model_get_entity_data_by_pos(const model_t* model, ivec_t pos)
+{
+    int idx = map_get_idx(&model->map, pos);
+    entity_t e = model->map.entities[idx];
+    return model_get_entity_data(model, e); 
 }
 
 // return 0 - not moved
 // return 1 - moved
 int move_entity(model_t* model, ivec_t from, ivec_t to)
 {
-    /*if (to.x < 0 || to.x >= model->map.width
-        || to.y < 0 || to.y >= model->map.height) return 0;*/
-
     if (map_check_pos_outside(&model->map, to)) return 0;
     
     int idx_to = map_get_idx(&model->map, to);
@@ -215,22 +322,6 @@ int move_entity(model_t* model, ivec_t from, ivec_t to)
 
     entity_set_mapid(model, entity, idx_to);
     return 1;
-}
-
-int entity_get_mapid (const model_t* model, entity_t entity)
-{
-    return GET_AS(int, dynarr_get(&model->entities[entity.type], entity.id));
-}
-
-void entity_set_mapid (model_t* model, entity_t entity, int mapid)
-{
-    int* ptr = (int*)dynarr_get(&model->entities[entity.type], entity.id);
-    *ptr = mapid;
-}
-
-uint16_t entity_get_texture_id (const model_t* model, entity_t entity)
-{
-    return GET_AS(uint16_t, (dynarr_get(&model->entities[entity.type], entity.id) + sizeof(int)));
 }
 
 static inline int manhatten_distance(ivec_t p1, ivec_t p2)
@@ -377,6 +468,8 @@ void bresenham_high(ivec_t v0, ivec_t v1, dynarr_t* line)
 
 void bresenham(ivec_t v0, ivec_t v1, dynarr_t* line)
 {
+    dynarr_clear(line);
+
     if (abs(v1.y - v0.y) < abs(v1.x - v0.x))
     {
         if (v0.x > v1.x) bresenham_low(v1, v0, line);

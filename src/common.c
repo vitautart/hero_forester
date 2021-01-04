@@ -121,6 +121,11 @@ void* dynarr_get(const dynarr_t* arr, int idx)
     return arr->data + idx * arr->stride;
 }
 
+void* dynarr_get_last(const dynarr_t* arr)
+{
+    return arr->data + (arr->size - 1) * arr->stride;
+}
+
 void dynarr_swap(dynarr_t* arr, int idx_1, int idx_2)
 {
     char temp[arr->stride];

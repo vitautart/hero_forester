@@ -1,4 +1,6 @@
 #include "common.h"
+#include "effects.h"
+#include "presentation.h"
 #include "resource.h"
 #include "generation.h"
 #include "model.h"
@@ -20,6 +22,8 @@ int main (void)
     int screen_h = 600;
     model_t model;
     user_state_t user_state = {.command_mode = MOVE_USER_MODE};
+    dynarr_t effects = dynarr_allocate(sizeof(effect_t), 0, 32);
+    dynarr_t effect_emmiters = dynarr_allocate(sizeof(effect_emmiter_t), 0, 32);
     InitWindow(screen_w, screen_h, "HERO FORESTER");
     Texture2D* textures = load_textures();
     generate_location(500, 500, &model);
@@ -40,13 +44,18 @@ int main (void)
             produce_user_action(&model, current_entity, &user_state, camera)
             : produce_ai_action(&model, current_entity); 
 
-        current_entity = do_action(&model, &current_action);
+        current_entity = do_action(&model, &current_action, &effect_emmiters);
+        convert_data_for_renderer(&effect_emmiters, &effects);
 
         sync_camera(&camera, &model, screen_w, screen_h);
 
-        render(camera, &model, &user_state, textures, screen_w, screen_h);
+        render(camera, &model, &user_state, &effects, textures, screen_w, screen_h);
+        mutate_data_for_renderer(&effects);
     }
+
     destroy_location(&model);
     CloseWindow();
+    dynarr_free(&effects);
+    dynarr_free(&effect_emmiters);
     return 0;
 }

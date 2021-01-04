@@ -1,6 +1,8 @@
 #ifndef GLOBALS_H
 #define GLOBALS_H
 
+#include "common.h"
+
 #define TSIZE 32
 
 typedef enum
@@ -45,7 +47,59 @@ typedef enum
     TEXTURE_ID_PATHTURN_2,
     TEXTURE_ID_PATHTURN_3,
     TEXTURE_ID_PATHTURN_4,
+    TEXTURE_ID_EFFECT_1,
+    TEXTURE_ID_EFFECT_2,
+    TEXTURE_ID_EFFECT_3,
+    TEXTURE_ID_EFFECT_4,
+    TEXTURE_ID_EFFECT_5,
+    TEXTURE_ID_EFFECT_6,
+    TEXTURE_ID_EFFECT_7,
+    TEXTURE_ID_EFFECT_8,
     TEXTURE_ID_MAX_VALUE
 } texture_id_t;
+
+#define DEBUG_RENDER
+// GLOBAL CONTAINERS
+static minheap_t global_open_set;
+static hashmap_t global_path_links;
+static hashmap_t global_g_score;
+static dynarr_t global_path;
+static dynarr_t global_bresenham_line;
+#ifdef DEBUG_RENDER
+static dynarr_t global_debug_red_map_cell_pos;
+static dynarr_t global_debug_blue_map_cell_pos;
+static dynarr_t global_debug_grey_map_cell_pos;
+static dynarr_t global_debug_yellow_map_cell_pos;
+#endif
+
+void globals_allocate()
+{
+    global_open_set = minheap_allocate(10000);
+    global_path_links = hashmap_allocate(128, 64);
+    global_g_score = hashmap_allocate(128, 64);
+    global_path = dynarr_allocate(sizeof(qnode_t), 0, 128);
+    global_bresenham_line = dynarr_allocate(sizeof(ivec_t), 0, 128);
+#ifdef DEBUG_RENDER
+    global_debug_red_map_cell_pos = dynarr_allocate(sizeof(ivec_t), 0, 128);
+    global_debug_blue_map_cell_pos = dynarr_allocate(sizeof(ivec_t), 0, 128);
+    global_debug_grey_map_cell_pos = dynarr_allocate(sizeof(ivec_t), 0, 128);
+    global_debug_yellow_map_cell_pos = dynarr_allocate(sizeof(ivec_t), 0, 128);
+#endif
+}
+
+void globals_free()
+{
+    minheap_free(&global_open_set);
+    hashmap_free(&global_path_links);
+    hashmap_free(&global_g_score);
+    dynarr_free(&global_path);
+    dynarr_free(&global_bresenham_line);
+#ifdef DEBUG_RENDER
+    dynarr_free(&global_debug_red_map_cell_pos);
+    dynarr_free(&global_debug_blue_map_cell_pos);
+    dynarr_free(&global_debug_grey_map_cell_pos);
+    dynarr_free(&global_debug_yellow_map_cell_pos);
+#endif
+}
 
 #endif // GLOBALS_H

@@ -36,6 +36,10 @@ Texture2D* load_textures()
     textures[TEXTURE_ID_PATHTURN_1] = LoadTexture("assets/pathturn.png");
     textures[TEXTURE_ID_TREE_1] = LoadTexture("assets/tree.png");
 
+
+    // TEXTURES FOR EFFECTS
+    textures[TEXTURE_ID_EFFECT_1] = LoadTexture("assets/splash1.png");
+
     UnloadImage(pathline_1_img);
     UnloadImage(pathline_2_img);
     UnloadImage(player_1_img);

@@ -4,6 +4,7 @@
 #include "globals.h"
 #include "common.h"
 #include "model.h"
+#include "effects.h"
 #include "raylib.h"
 #include <stdio.h>
 
@@ -22,6 +23,11 @@ typedef struct action_t
 {
     action_type_t type;
     entity_t entity;
+    union
+    {
+        float asfloat;
+        int asint;
+    } value;
     ivec_t map_pos_idx[2];
 } action_t;
 
@@ -90,10 +96,10 @@ entity_t next_entity_for_action(const model_t* model, entity_t current)
         return model->map.entities[player->mapid];
     }
 
-    assert(false);
+    assert(0);
 }
 
-entity_t do_action(model_t* model, const action_t* action)
+entity_t do_action(model_t* model, const action_t* action, dynarr_t* effect_emmiters)
 {
     if (action->type == ACTION_TYPE_NO_ACTION_PRODUCED)
     {
@@ -148,7 +154,52 @@ entity_t do_action(model_t* model, const action_t* action)
 
         return result ? next_entity_for_action(model, action->entity) : action->entity;
     }
-    assert(false);
+    else if (action->type == ACTION_TYPE_SHOOT)
+    {
+        ivec_t start = action->map_pos_idx[0];
+        ivec_t end = action->map_pos_idx[1];
+        int end_idx = map_get_idx(&model->map, end);
+        entity_t end_entity = model->map.entities[end_idx];
+
+        if (end_entity.type == UNKNOWN_ENTITY) return action->entity;
+        if (!(model->components[end_entity.type] & COMPONENT_BIT_FLAG_HEALTH)) return action->entity;
+
+        bresenham(start, end, &global_bresenham_line);
+
+        ivec_t current_pos;
+        for (int i = 1; i < global_bresenham_line.size - 1; i++)
+        {
+            current_pos = GET_AS(ivec_t, dynarr_get(&global_bresenham_line, i));
+            int map_id = map_get_idx(&model->map, current_pos);
+            if (bitset_get(&model->map.obstacles, map_id))
+            {
+                return action->entity;
+            }
+        }
+
+        void* end_entity_ptr = model_get_entity_data(model, end_entity);
+        int current_health = entity_get_health_void(end_entity_ptr);
+        current_health -= action->value.asint;
+
+        if (current_health <= 0)
+        {
+            remove_entity(model, end);
+        }
+        else
+        {
+            effect_emmiter_t emmiter = 
+            {
+                .type = EFFECT_TYPE_SHOOT,
+                .pos = {start, end}
+            };
+            dynarr_add(effect_emmiters, &emmiter);
+            entity_set_health_void(end_entity_ptr, current_health);
+        }
+
+        return next_entity_for_action(model, action->entity);
+
+    }
+    assert(0);
 }
 
 #endif // SIMULATION_H

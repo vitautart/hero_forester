@@ -8,41 +8,14 @@
 #include <stdlib.h>
 #include <time.h>
 
-void globals_allocate(const map_t* map)
-{
-    global_open_set = minheap_allocate(10000);
-    global_path_links = hashmap_allocate(128, 64);
-    global_g_score = hashmap_allocate(128, 64);
-    global_path = dynarr_allocate(sizeof(qnode_t), 0, 128);
-#ifdef DEBUG_RENDER
-    global_debug_red_map_cell_pos = dynarr_allocate(sizeof(ivec_t), 0, 128);
-    global_debug_blue_map_cell_pos = dynarr_allocate(sizeof(ivec_t), 0, 128);
-    global_debug_grey_map_cell_pos = dynarr_allocate(sizeof(ivec_t), 0, 128);
-    global_debug_yellow_map_cell_pos = dynarr_allocate(sizeof(ivec_t), 0, 128);
-#endif
-}
-
-void globals_free()
-{
-    minheap_free(&global_open_set);
-    hashmap_free(&global_path_links);
-    hashmap_free(&global_g_score);
-    dynarr_free(&global_path);
-#ifdef DEBUG_RENDER
-    dynarr_free(&global_debug_red_map_cell_pos);
-    dynarr_free(&global_debug_blue_map_cell_pos);
-    dynarr_free(&global_debug_grey_map_cell_pos);
-    dynarr_free(&global_debug_yellow_map_cell_pos);
-#endif
-}
-
 void generate_location(int width, int height, model_t* model)
 {
+    model_allocate(model, width, height);
     map_t* map = &model->map;
-    map_allocate(&model->map, width, height);
-    model->entities[PLAYER_ENTITY] = dynarr_allocate(sizeof(ent_player_t), 0, 1);
-    model->entities[ENEMY_ENTITY] = dynarr_allocate(sizeof(ent_enemy_t), 0, 32);
-    model->entities[TREE_ENTITY] = dynarr_allocate(sizeof(ent_enemy_t), 0, width * height);
+    //map_allocate(&model->map, width, height);
+    //model->entities[PLAYER_ENTITY] = dynarr_allocate(sizeof(ent_player_t), 0, 1);
+    //model->entities[ENEMY_ENTITY] = dynarr_allocate(sizeof(ent_enemy_t), 0, 32);
+    //model->entities[TREE_ENTITY] = dynarr_allocate(sizeof(ent_enemy_t), 0, width * height);
 
     // GENERATION OF TREES
     time_t t;
@@ -104,6 +77,7 @@ void generate_location(int width, int height, model_t* model)
             {
                 ent_player_t* player = (ent_player_t*)add_entity(model, (ivec_t) {x, y}, PLAYER_ENTITY);
                 player->texture_id = TEXTURE_ID_PLAYER_2;
+                player->health = 100;
                 break;
             }
         }
@@ -122,21 +96,23 @@ void generate_location(int width, int height, model_t* model)
             {
                 ent_enemy_t* enemy = (ent_enemy_t*)add_entity(model, (ivec_t) {x, y}, ENEMY_ENTITY);
                 enemy->texture_id = TEXTURE_ID_ENEMY_1;
+                enemy->health = 50;
                 break;
             }
         }
         if (find_place) break;
     }
 
-    globals_allocate(&model->map);
+    globals_allocate();
 }
 
 void destroy_location(model_t* model)
 {
     globals_free();
-    map_free(&model->map);
-    for (int i = 0; i < ENTITY_TYPES_COUNT; i++)
-        dynarr_free(&model->entities[i]);
+    model_free(model);
+    /*map_free(&model->map);
+    for (int i = 0; i < ENTITY_TYPE_LENGTH; i++)
+        dynarr_free(&model->entities[i]);*/
 }
 
 #endif // GENERATOR_H

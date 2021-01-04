@@ -82,6 +82,7 @@ void test_dynarr_full()
     for (int i = 0; i < 5; i++) 
         dynarr_add(&arr, &i);
 
+    assert(GET_AS(int, dynarr_get_last(&arr)) == 4);
     for (int i = 0; i < arr.size; i++)
         assert(GET_AS(int, dynarr_get(&arr, i)) == i);
     

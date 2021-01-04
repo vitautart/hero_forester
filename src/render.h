@@ -12,10 +12,10 @@ iaabb_t camera_get_map_boundaries(Camera2D camera, int screen_w, int screen_h);
 iaabb_t calculate_draw_bounds(Camera2D camera, const map_t* map, int screen_w, int screen_h, int safety_extent);
 void render_cell_with_rectangle(ivec_t pos, int has_border,
         int has_fill, int border_thickness, Color fill_color, Color border_color);
-void render(Camera2D camera, const model_t* model, const user_state_t* user_state, const Texture2D *textures, int screen_w, int screen_h);
+void render(Camera2D camera, const model_t* model, const user_state_t* user_state, const dynarr_t* effects, const Texture2D *textures, int screen_w, int screen_h);
 void render_ground(const map_t * map, const Texture2D* textures, const iaabb_t* bounds);
 void render_entities(const model_t* model, const Texture2D* textures, const iaabb_t* bounds);
-void render_effects();
+void render_effects(const dynarr_t* effects, const Texture2D *textures);
 void render_ingame_ui(Camera2D camera, const model_t* model, const user_state_t* user_state);
 void render_cell_under_cursor(Camera2D camera, const model_t* model,
         const user_state_t* user_state);
@@ -104,7 +104,7 @@ iaabb_t calculate_draw_bounds(Camera2D camera, const map_t* map, int screen_w, i
     return bounds;
 }
 
-void render(Camera2D camera, const model_t* model, const user_state_t* user_state, const Texture2D *textures, int screen_w, int screen_h)
+void render(Camera2D camera, const model_t* model, const user_state_t* user_state, const dynarr_t* effects, const Texture2D *textures, int screen_w, int screen_h)
 {
     iaabb_t bounds = calculate_draw_bounds(camera, &model->map, screen_w, screen_h, 2);
     BeginDrawing();
@@ -113,7 +113,7 @@ void render(Camera2D camera, const model_t* model, const user_state_t* user_stat
     BeginMode2D(camera);
     render_ground(&model->map, textures, &bounds);
     render_entities(model, textures, &bounds);
-    render_effects();
+    render_effects(effects, textures);
     render_ingame_ui(camera, model, user_state);
 #ifdef DEBUG_RENDER
     render_debug_cells(&model->map);
@@ -162,7 +162,19 @@ void render_entities(const model_t* model, const Texture2D* textures, const iaab
     }
 }
 
-void render_effects() {}
+void render_effects(const dynarr_t* effects, const Texture2D* textures) 
+{   
+    if (effects->size == 0) return;
+
+    effect_t* effect = dynarr_get(effects, 0);
+
+    for (int i = 0; i < effects->size; i++)
+    {
+        Vector2 pos = map_to_world_lu_offset(effect->pos); 
+        DrawTextureV(textures[effect->texture_id], pos, WHITE);
+        effect++;
+    }
+}
 
 void render_ingame_ui(Camera2D camera, const model_t* model, const user_state_t* user_state)
 {
