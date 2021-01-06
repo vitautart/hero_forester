@@ -103,12 +103,12 @@ void generate_location(int width, int height, model_t* model)
         if (find_place) break;
     }
 
-    globals_allocate();
+    globals_allocate_per_location();
 }
 
 void destroy_location(model_t* model)
 {
-    globals_free();
+    globals_free_per_location();
     model_free(model);
     /*map_free(&model->map);
     for (int i = 0; i < ENTITY_TYPE_LENGTH; i++)

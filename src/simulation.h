@@ -113,13 +113,23 @@ entity_t do_action(model_t* model, const action_t* action, dynarr_t* effect_emmi
     {
         ivec_t current_pos = action->map_pos_idx[0]; 
         ivec_t next_pos = action->map_pos_idx[1];
-        if (action->entity.type == PLAYER_ENTITY)
+
+        void* entity_ptr = model_get_entity_data(model, action->entity);
+        ivec_t delta = ivec_sub(next_pos, current_pos); 
+        uint16_t current_tex_id = entity_get_texture_id_void(entity_ptr);
+        if (delta.x > 0)
         {
-            ent_player_t* player = GET_PLAYER(model);
-            ivec_t delta = ivec_sub(next_pos, current_pos); 
-            if (delta.x > 0) player->texture_id = TEXTURE_ID_PLAYER_1;
-            else if (delta.x < 0) player->texture_id = TEXTURE_ID_PLAYER_2;
+            uint16_t new_tex_id = global_tex_id_left_to_right_mapping[current_tex_id];
+            if (new_tex_id != TEXTURE_ID_INVALID) 
+                entity_set_texture_id_void(entity_ptr, new_tex_id);
         }
+        else if (delta.x < 0) 
+        {
+            uint16_t new_tex_id = global_tex_id_right_to_left_mapping[current_tex_id];
+            if (new_tex_id != TEXTURE_ID_INVALID) 
+                entity_set_texture_id_void(entity_ptr, new_tex_id);
+        }
+
         int result = move_entity(model, current_pos, next_pos);
         return result ? next_entity_for_action(model, action->entity) : action->entity;
     }

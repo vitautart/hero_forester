@@ -1,5 +1,6 @@
 #include "common.h"
 #include "effects.h"
+#include "globals.h"
 #include "presentation.h"
 #include "resource.h"
 #include "generation.h"
@@ -25,6 +26,8 @@ int main (void)
     dynarr_t effects = dynarr_allocate(sizeof(effect_t), 0, 32);
     dynarr_t effect_emmiters = dynarr_allocate(sizeof(effect_emmiter_t), 0, 32);
     InitWindow(screen_w, screen_h, "HERO FORESTER");
+
+    globals_allocate_per_session();
     Texture2D* textures = load_textures();
     generate_location(500, 500, &model);
 
@@ -54,6 +57,7 @@ int main (void)
     }
 
     destroy_location(&model);
+    globals_free_per_session();
     CloseWindow();
     dynarr_free(&effects);
     dynarr_free(&effect_emmiters);

@@ -9,6 +9,12 @@
 
 Texture2D* load_textures()
 {
+    for (int i = 0; i < TEXTURE_ID_MAX_VALUE; i++)
+    {
+        global_tex_id_right_to_left_mapping[i] = TEXTURE_ID_INVALID;
+        global_tex_id_left_to_right_mapping[i] = TEXTURE_ID_INVALID;
+    }
+
     long size = sizeof(Texture2D) * TEXTURE_ID_MAX_VALUE;
     Texture2D* textures = malloc (size);
     memset(textures, 0, size);
@@ -27,8 +33,13 @@ Texture2D* load_textures()
 
     textures[TEXTURE_ID_PLAYER_1] = LoadTextureFromImage(player_1_img);
     textures[TEXTURE_ID_PLAYER_2] = LoadTextureFromImage(player_2_img);
+    global_tex_id_right_to_left_mapping[TEXTURE_ID_PLAYER_1] = TEXTURE_ID_PLAYER_2;
+    global_tex_id_left_to_right_mapping[TEXTURE_ID_PLAYER_2] = TEXTURE_ID_PLAYER_1;
+
     textures[TEXTURE_ID_ENEMY_1] = LoadTextureFromImage(enemy_1_img);
     textures[TEXTURE_ID_ENEMY_2] = LoadTextureFromImage(enemy_2_img);
+    global_tex_id_right_to_left_mapping[TEXTURE_ID_ENEMY_1] = TEXTURE_ID_ENEMY_2;
+    global_tex_id_left_to_right_mapping[TEXTURE_ID_ENEMY_2] = TEXTURE_ID_ENEMY_1;
 
     textures[TEXTURE_ID_GRASS_1] = LoadTexture("assets/grass.png");
     textures[TEXTURE_ID_PATHLINE_1] = LoadTextureFromImage(pathline_1_img);

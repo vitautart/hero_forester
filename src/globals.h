@@ -55,8 +55,12 @@ typedef enum
     TEXTURE_ID_EFFECT_6,
     TEXTURE_ID_EFFECT_7,
     TEXTURE_ID_EFFECT_8,
-    TEXTURE_ID_MAX_VALUE
+    TEXTURE_ID_MAX_VALUE,
+    TEXTURE_ID_INVALID
 } texture_id_t;
+
+static texture_id_t global_tex_id_right_to_left_mapping[TEXTURE_ID_MAX_VALUE];
+static texture_id_t global_tex_id_left_to_right_mapping[TEXTURE_ID_MAX_VALUE];
 
 #define DEBUG_RENDER
 // GLOBAL CONTAINERS
@@ -72,28 +76,37 @@ static dynarr_t global_debug_grey_map_cell_pos;
 static dynarr_t global_debug_yellow_map_cell_pos;
 #endif
 
-void globals_allocate()
+void globals_allocate_per_session()
 {
-    global_open_set = minheap_allocate(10000);
-    global_path_links = hashmap_allocate(128, 64);
-    global_g_score = hashmap_allocate(128, 64);
-    global_path = dynarr_allocate(sizeof(qnode_t), 0, 128);
-    global_bresenham_line = dynarr_allocate(sizeof(ivec_t), 0, 128);
 #ifdef DEBUG_RENDER
     global_debug_red_map_cell_pos = dynarr_allocate(sizeof(ivec_t), 0, 128);
     global_debug_blue_map_cell_pos = dynarr_allocate(sizeof(ivec_t), 0, 128);
     global_debug_grey_map_cell_pos = dynarr_allocate(sizeof(ivec_t), 0, 128);
     global_debug_yellow_map_cell_pos = dynarr_allocate(sizeof(ivec_t), 0, 128);
 #endif
+
 }
 
-void globals_free()
+void globals_allocate_per_location()
+{
+    global_open_set = minheap_allocate(10000);
+    global_path_links = hashmap_allocate(128, 64);
+    global_g_score = hashmap_allocate(128, 64);
+    global_path = dynarr_allocate(sizeof(qnode_t), 0, 128);
+    global_bresenham_line = dynarr_allocate(sizeof(ivec_t), 0, 128);
+}
+
+void globals_free_per_location()
 {
     minheap_free(&global_open_set);
     hashmap_free(&global_path_links);
     hashmap_free(&global_g_score);
     dynarr_free(&global_path);
     dynarr_free(&global_bresenham_line);
+}
+
+void globals_free_per_session()
+{
 #ifdef DEBUG_RENDER
     dynarr_free(&global_debug_red_map_cell_pos);
     dynarr_free(&global_debug_blue_map_cell_pos);
