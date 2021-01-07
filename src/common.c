@@ -49,7 +49,7 @@ dynarr_t dynarr_allocate(int stride, int size, int capacity)
     return arr;
 }
 
-com_result_t dynarr_add (dynarr_t* arr, void* elem)
+com_result_t dynarr_add (dynarr_t* arr, const void* elem)
 {
     if (arr->capacity == arr->size)
     {

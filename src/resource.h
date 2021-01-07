@@ -27,9 +27,25 @@ Texture2D* load_textures()
     Image enemy_2_img = ImageCopy(enemy_1_img);
     ImageFlipHorizontal(&enemy_2_img);
 
-    Image pathline_1_img = LoadImage("assets/pathline.png");
-    Image pathline_2_img = ImageCopy(pathline_1_img);
-    ImageRotateCW(&pathline_2_img);
+    Image pathline_horizontal_img = LoadImage("assets/pathline.png");
+    Image pathline_vertical_img = ImageCopy(pathline_horizontal_img);
+    ImageRotateCW(&pathline_vertical_img);
+
+    Image pathturn_lu_img = LoadImage("assets/pathturn1.png");
+    Image pathturn_ru_img = ImageCopy(pathturn_lu_img);
+    ImageRotateCW(&pathturn_ru_img);
+    Image pathturn_rd_img = ImageCopy(pathturn_ru_img);
+    ImageRotateCW(&pathturn_rd_img);
+    Image pathturn_ld_img = ImageCopy(pathturn_rd_img);
+    ImageRotateCW(&pathturn_ld_img);    
+
+    Image pathturn_tshape_l_img = LoadImage("assets/pathturn2.png");
+    Image pathturn_tshape_u_img = ImageCopy(pathturn_tshape_l_img);
+    ImageRotateCW(&pathturn_tshape_u_img);
+    Image pathturn_tshape_r_img = ImageCopy(pathturn_tshape_u_img);
+    ImageRotateCW(&pathturn_tshape_r_img);
+    Image pathturn_tshape_d_img = ImageCopy(pathturn_tshape_r_img);
+    ImageRotateCW(&pathturn_tshape_d_img);
 
     textures[TEXTURE_ID_PLAYER_1] = LoadTextureFromImage(player_1_img);
     textures[TEXTURE_ID_PLAYER_2] = LoadTextureFromImage(player_2_img);
@@ -41,18 +57,34 @@ Texture2D* load_textures()
     global_tex_id_right_to_left_mapping[TEXTURE_ID_ENEMY_1] = TEXTURE_ID_ENEMY_2;
     global_tex_id_left_to_right_mapping[TEXTURE_ID_ENEMY_2] = TEXTURE_ID_ENEMY_1;
 
-    textures[TEXTURE_ID_GRASS_1] = LoadTexture("assets/grass.png");
-    textures[TEXTURE_ID_PATHLINE_1] = LoadTextureFromImage(pathline_1_img);
-    textures[TEXTURE_ID_PATHLINE_2] = LoadTextureFromImage(pathline_2_img);
-    textures[TEXTURE_ID_PATHTURN_1] = LoadTexture("assets/pathturn.png");
-    textures[TEXTURE_ID_TREE_1] = LoadTexture("assets/tree.png");
+    textures[TEXTURE_ID_PATHLINE_HORIZONTAL] = LoadTextureFromImage(pathline_horizontal_img);
+    textures[TEXTURE_ID_PATHLINE_VERICAL] = LoadTextureFromImage(pathline_vertical_img);
+    textures[TEXTURE_ID_PATHTURN_LU] = LoadTextureFromImage(pathturn_lu_img);
+    textures[TEXTURE_ID_PATHTURN_RU] = LoadTextureFromImage(pathturn_ru_img);
+    textures[TEXTURE_ID_PATHTURN_RD] = LoadTextureFromImage(pathturn_rd_img);
+    textures[TEXTURE_ID_PATHTURN_LD] = LoadTextureFromImage(pathturn_ld_img);
+    textures[TEXTURE_ID_PATHTURN_TSHAPE_L] = LoadTextureFromImage(pathturn_tshape_l_img);
+    textures[TEXTURE_ID_PATHTURN_TSHAPE_U] = LoadTextureFromImage(pathturn_tshape_u_img);
+    textures[TEXTURE_ID_PATHTURN_TSHAPE_R] = LoadTextureFromImage(pathturn_tshape_r_img);
+    textures[TEXTURE_ID_PATHTURN_TSHAPE_D] = LoadTextureFromImage(pathturn_tshape_d_img);
+    textures[TEXTURE_ID_PATHTURN_CROSS] = LoadTexture("assets/pathturn3.png");
 
+    textures[TEXTURE_ID_GRASS_1] = LoadTexture("assets/grass.png");
+    textures[TEXTURE_ID_TREE_1] = LoadTexture("assets/tree.png");
 
     // TEXTURES FOR EFFECTS
     textures[TEXTURE_ID_EFFECT_1] = LoadTexture("assets/splash1.png");
 
-    UnloadImage(pathline_1_img);
-    UnloadImage(pathline_2_img);
+    UnloadImage(pathline_horizontal_img);
+    UnloadImage(pathline_vertical_img);
+    UnloadImage(pathturn_ld_img);
+    UnloadImage(pathturn_lu_img);
+    UnloadImage(pathturn_rd_img);
+    UnloadImage(pathturn_ru_img);
+    UnloadImage(pathturn_tshape_d_img);
+    UnloadImage(pathturn_tshape_l_img);
+    UnloadImage(pathturn_tshape_r_img);
+    UnloadImage(pathturn_tshape_u_img);
     UnloadImage(player_1_img);
     UnloadImage(player_2_img);
     UnloadImage(enemy_1_img);

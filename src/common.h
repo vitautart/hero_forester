@@ -85,7 +85,7 @@ void bitset_free(bitset_t *set);
 
 // dynarr_t functions
 dynarr_t dynarr_allocate(int stride, int size, int capacity);
-com_result_t dynarr_add (dynarr_t* arr, void* elem);
+com_result_t dynarr_add (dynarr_t* arr, const void* elem);
 com_result_t dynarr_increment (dynarr_t* arr);
 // return 1 - swap was happened
 // return 0 - swap wasn't happened
@@ -128,6 +128,19 @@ int hashmap_remove(hashmap_t* map, int key);
 static inline float norm_rand()
 {
     return (RAND_MAX - rand()) / (float)RAND_MAX;
+}
+
+static inline int int_rand_range(int min, int max)
+{
+    return min + (max - min) * norm_rand();
+}
+
+static inline ivec_t ivec_rand_from_range(ivec_t min, ivec_t max)
+{
+    ivec_t delta = ivec_sub(max, min);
+    delta.x = (int)(norm_rand() * delta.x);
+    delta.y = (int)(norm_rand() * delta.y);
+    return ivec_add(min, delta);
 }
 
 static inline uint32_t knuth_mult_hash(uint32_t input)
