@@ -29,7 +29,7 @@ int main (void)
 
     globals_allocate_per_session();
     Texture2D* textures = load_textures();
-    generate_location(500, 500, &model);
+    generate_location(60, 60, &model);
 
     const ent_player_t* player = (ent_player_t*)dynarr_get(&model.entities[PLAYER_ENTITY], 0);
     entity_t current_entity = model.map.entities[player->mapid];

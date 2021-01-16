@@ -111,6 +111,7 @@ entity_t do_action(model_t* model, const action_t* action, dynarr_t* effect_emmi
     }
     else if (action->type == ACTION_TYPE_MOVE_TO)
     {
+
         ivec_t current_pos = action->map_pos_idx[0]; 
         ivec_t next_pos = action->map_pos_idx[1];
 
