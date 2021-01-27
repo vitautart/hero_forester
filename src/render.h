@@ -1,10 +1,10 @@
 #ifndef RENDER_H
 #define RENDER_H
 
-#include "common.h"
 #include "presentation.h"
 #include "model.h"
 #include "raylib.h"
+#include "uisystem.h"
 #include <stdio.h>
 #include <sys/types.h>
 
@@ -12,14 +12,14 @@ iaabb_t camera_get_map_boundaries(Camera2D camera, int screen_w, int screen_h);
 iaabb_t calculate_draw_bounds(Camera2D camera, const map_t* map, int screen_w, int screen_h, int safety_extent);
 void render_cell_with_rectangle(ivec_t pos, int has_border,
         int has_fill, int border_thickness, Color fill_color, Color border_color);
-void render(Camera2D camera, const model_t* model, const user_state_t* user_state, const dynarr_t* effects, const Texture2D *textures, int screen_w, int screen_h);
+void render(Camera2D camera, const model_t* model, const user_state_t* user_state, const dynarr_t* effects, const Texture2D *textures, const ui_container_t* ui, int screen_w, int screen_h);
 void render_ground(const map_t * map, const Texture2D* textures, const iaabb_t* bounds);
 void render_entities(const model_t* model, const Texture2D* textures, const iaabb_t* bounds);
 void render_effects(const dynarr_t* effects, const Texture2D *textures);
 void render_ingame_ui(Camera2D camera, const model_t* model, const user_state_t* user_state);
 void render_cell_under_cursor(Camera2D camera, const model_t* model,
         const user_state_t* user_state);
-void render_ui();
+void render_ui(const ui_container_t* container/*, int screen_w, int screen_h*/);
 
 #ifdef DEBUG_RENDER
 void render_debug_cells(const map_t * map)
@@ -104,7 +104,7 @@ iaabb_t calculate_draw_bounds(Camera2D camera, const map_t* map, int screen_w, i
     return bounds;
 }
 
-void render(Camera2D camera, const model_t* model, const user_state_t* user_state, const dynarr_t* effects, const Texture2D *textures, int screen_w, int screen_h)
+void render(Camera2D camera, const model_t* model, const user_state_t* user_state, const dynarr_t* effects, const Texture2D *textures, const ui_container_t* ui, int screen_w, int screen_h)
 {
     iaabb_t bounds = calculate_draw_bounds(camera, &model->map, screen_w, screen_h, 2);
     BeginDrawing();
@@ -120,7 +120,7 @@ void render(Camera2D camera, const model_t* model, const user_state_t* user_stat
 #endif
     EndMode2D();
 
-    render_ui();
+    render_ui(ui/*, screen_w, screen_h*/);
     EndDrawing();
 }
 
@@ -181,9 +181,44 @@ void render_ingame_ui(Camera2D camera, const model_t* model, const user_state_t*
     render_cell_under_cursor(camera, model, user_state);
 }
 
-void render_ui()
+// TODO: can be added camera culling
+void render_ui(const ui_container_t* ui/*, int screen_w, int screen_h*/)
 {
-    DrawText("HERO FORESTER", 10, 10, 20, WHITE);
+    //DrawText("HERO FORESTER", 10, 10, 20, WHITE);
+    const dynarr_t* layers = ui->data.data;
+
+    for (int i = 0; i < ui->data.size; i++)
+    {
+        const dynarr_t* layer_arr = layers + i;
+        const ui_entity_t* layer = layer_arr->data;
+        for (int entity_id = 0; entity_id < layer_arr->size; entity_id++)
+        {
+            const ui_entity_t* e = &layer[entity_id];
+            if (e->is_visible == 0) continue;
+            if (e->type == UI_TYPE_CANVAS) continue;
+            Rectangle r = 
+            {   
+                .x = e->screen_pos.x,
+                .y = e->screen_pos.y,
+                .width = e->size.x,
+                .height = e->size.y
+            };
+            switch (e->type)
+            {
+                case UI_TYPE_PANEL:
+                    {
+                        DrawRectangleRec(r, e->panel.backgroud_color);
+                        if (e->panel.has_borders) 
+                            DrawRectangleLinesEx(r, 1, e->panel.border_color);
+                        break;
+                    };
+                case UI_TYPE_LABEL: break;
+                case UI_TYPE_IMAGE: break;
+                case UI_TYPE_BUTTON: break;
+                case UI_TYPE_CANVAS: break; // just for consistency
+            };
+        }
+    }
 }
 
 #endif // RENDER_H

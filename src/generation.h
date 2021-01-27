@@ -121,8 +121,8 @@ void generate_path_draw_zigzag(const model_t*model, path_data_t* data, ivec_t p1
 // TODO: add some offsets to first 4 generation
 path_data_t generate_path_v1(model_t* model)
 {
-    int c_offset = 10;
-    int b_offset = 10;
+    int c_offset = 5;
+    int b_offset = 5;
     int width = model->map.width;
     int height = model->map.height;
     path_data_t data;

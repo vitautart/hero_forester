@@ -1,6 +1,7 @@
 #ifndef COMMON_H
 #define COMMON_H
 
+#include "raylib.h"
 #include <stdlib.h>
 #include <stdint.h>
 #include <malloc.h>
@@ -75,6 +76,7 @@ static inline ivec_t ivec_add(ivec_t v1, ivec_t v2);
 static inline ivec_t ivec_mul(int s, ivec_t v);
 static inline ivec_t ivec_sub(ivec_t v1, ivec_t v2);
 static inline ivec_t ivec_clamp(ivec_t v, ivec_t min, ivec_t max);
+static inline ivec_t ivec_mul_v2(ivec_t vi, Vector2 vf);
 
 // bitset_t functions
 bitset_t bitset_allocate(int bitcount);
@@ -184,6 +186,14 @@ static inline ivec_t ivec_clamp(ivec_t v, ivec_t min, ivec_t max)
     };
 }
 
+static inline ivec_t ivec_mul_v2(ivec_t vi, Vector2 vf)
+{
+    return (ivec_t)
+    {
+        .x = (float)vi.x * vf.x,
+        .y = (float)vi.y * vf.y
+    };
+}
 static inline int minheap_get_child_id_1(int i)
 {
     return 2 * i + 1;

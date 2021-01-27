@@ -16,9 +16,11 @@ typedef enum
 
 typedef struct ui_entity_t
 {
-    ivec_t pos;
-    ivec_t size;
-    Vector2 rel_pos; // from 0 to 1
+    ivec_t screen_pos; // position of left upper corner of rectangle in screen coordinate system
+    ivec_t base_pos; // position to base point (size * base_alignment) from parent point with (position = parent->size * parent_alignment) in parent coordinate system
+    ivec_t size; // vector of size thjat goes from screen_pos to right bottom corner
+    Vector2 base_align; // 0 to 1
+    Vector2 parent_align; // 0 to 1
     int is_visible;
     
     ui_type_t type;
@@ -59,7 +61,6 @@ typedef struct ui_entity_t
     };
 } ui_entity_t;
 
-
 // structure 
 typedef struct ui_container_t
 {
@@ -88,7 +89,7 @@ void ui_free(ui_container_t* container)
     dynarr_free(&container->data);
 }
 
-void ui_add_child(ui_container_t* container, ui_entity_t* entity, ui_entity_t* child)
+ui_entity_t* ui_add_child(ui_container_t* container, ui_entity_t* entity, ui_entity_t* child)
 {
     int entity_layer_id = entity != NULL ? entity->layer : -1;
 
@@ -125,6 +126,7 @@ void ui_add_child(ui_container_t* container, ui_entity_t* entity, ui_entity_t* c
         entity->first_child = child->self_id;
     }
     dynarr_add(layer, child);
+    return dynarr_get_last(layer);
 }
 
 void ui_remove_entity(ui_container_t* container, ui_entity_t* entity)
@@ -198,7 +200,38 @@ void ui_remove_entity(ui_container_t* container, ui_entity_t* entity)
     }
 }
 
-void ui_process(ui_container_t* ui_data)
+void ui_process(ui_container_t* container, int screen_w, int screen_h)
 {
-    ui_entity_t* container = ui_data->data.data;
+    dynarr_t* layers = container->data.data;
+    if (layers->size > 0)
+    {
+        ivec_t screen_size = {screen_w, screen_h};
+        ui_entity_t* layer = layers->data;
+        for (int entity_id = 0; entity_id < layers->size; entity_id++)
+        {
+            ui_entity_t* e = layer + entity_id;
+            ivec_t parent_pivot = ivec_mul_v2(screen_size, e->parent_align);
+            ivec_t base_local = ivec_mul_v2(e->size, e->base_align);
+            e->screen_pos = ivec_add(parent_pivot, ivec_sub(e->base_pos, base_local));
+        }
+    }
+    for (int i = 1; i < container->data.size; i++)
+    {
+        dynarr_t* layer_arr = layers + i;
+        dynarr_t* layer_arr_parent = layers + i - 1;
+        ui_entity_t* layer = layer_arr->data;
+        ui_entity_t* layer_parent = layer_arr_parent->data;
+        for (int entity_id = 0; entity_id < layer_arr->size; entity_id++)
+        {
+            ui_entity_t* e = &layer[entity_id];
+            ui_entity_t* parent = &layer_parent[e->parent];
+
+            ivec_t parent_pivot = ivec_mul_v2(parent->size, e->parent_align);
+            ivec_t base_local = ivec_mul_v2(e->size, e->base_align);
+            e->screen_pos = ivec_add(parent->screen_pos, 
+                    ivec_add(parent_pivot, ivec_sub(e->base_pos, base_local)));
+            
+            e->is_visible = parent->is_visible;
+        }
+    }
 }
