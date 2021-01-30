@@ -4,6 +4,7 @@
 #include "presentation.h"
 #include "model.h"
 #include "raylib.h"
+#include "raymath.h"
 #include "uisystem.h"
 #include <stdio.h>
 #include <sys/types.h>
@@ -19,7 +20,7 @@ void render_effects(const dynarr_t* effects, const Texture2D *textures);
 void render_ingame_ui(Camera2D camera, const model_t* model, const user_state_t* user_state);
 void render_cell_under_cursor(Camera2D camera, const model_t* model,
         const user_state_t* user_state);
-void render_ui(const ui_container_t* container/*, int screen_w, int screen_h*/);
+void render_ui(const ui_container_t* container, const Texture2D* textures);
 
 #ifdef DEBUG_RENDER
 void render_debug_cells(const map_t * map)
@@ -120,7 +121,8 @@ void render(Camera2D camera, const model_t* model, const user_state_t* user_stat
 #endif
     EndMode2D();
 
-    render_ui(ui/*, screen_w, screen_h*/);
+    render_ui(ui, textures);
+
     EndDrawing();
 }
 
@@ -182,7 +184,7 @@ void render_ingame_ui(Camera2D camera, const model_t* model, const user_state_t*
 }
 
 // TODO: can be added camera culling
-void render_ui(const ui_container_t* ui/*, int screen_w, int screen_h*/)
+void render_ui(const ui_container_t* ui, const Texture2D* textures)
 {
     //DrawText("HERO FORESTER", 10, 10, 20, WHITE);
     const dynarr_t* layers = ui->data.data;
@@ -212,8 +214,42 @@ void render_ui(const ui_container_t* ui/*, int screen_w, int screen_h*/)
                             DrawRectangleLinesEx(r, 1, e->panel.border_color);
                         break;
                     };
-                case UI_TYPE_LABEL: break;
-                case UI_TYPE_IMAGE: break;
+                case UI_TYPE_LABEL: 
+                    {
+                        DrawText(e->label.text, 
+                                e->screen_pos.x, 
+                                e->screen_pos.y, 
+                                e->size.y, 
+                                e->label.text_color);
+                        break;
+                    }
+                case UI_TYPE_IMAGE: 
+                    {
+                        DrawTextureQuad(textures[e->image.tex_id], 
+                                Vector2One(), Vector2Zero(), r, WHITE);
+                        break;
+                    }
+                case UI_TYPE_PANEL_9_PATCH: 
+                    {
+                        NPatchInfo patch = 
+                        {
+                            .left = e->panel_9_patch.left,
+                            .right = e->panel_9_patch.right,
+                            .top = e->panel_9_patch.top,
+                            .bottom = e->panel_9_patch.bottom,
+                            .sourceRec = 
+                            {
+                                .x = 0,
+                                .y = 0,
+                                .width = 16,
+                                .height = 16
+                            },
+                            .type = NPT_9PATCH,
+                        };
+                        DrawTextureNPatch(textures[e->panel_9_patch.tex_id],
+                                patch, r, Vector2Zero(), 0, e->panel_9_patch.tint);
+                        break;
+                    }
                 case UI_TYPE_BUTTON: break;
                 case UI_TYPE_CANVAS: break; // just for consistency
             };

@@ -75,6 +75,9 @@ Texture2D* load_textures()
     // TEXTURES FOR EFFECTS
     textures[TEXTURE_ID_EFFECT_1] = LoadTexture("assets/splash1.png");
 
+    // TEXTURES FOR UI
+    textures[TEXTURE_ID_BUTTON_1] = LoadTexture("assets/button_1.png");
+
     UnloadImage(pathline_horizontal_img);
     UnloadImage(pathline_vertical_img);
     UnloadImage(pathturn_ld_img);

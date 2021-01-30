@@ -1,4 +1,5 @@
 #include "common.h"
+#include "uisystem.h"
 
 #include <assert.h>
 #include <stdio.h>
@@ -311,6 +312,93 @@ void test_knuth_mult_hash_collisions()
     }
 }
 
+void test_ui_container()
+{
+    ui_container_t ui = ui_allocate(2, 1);
+
+    for (int i = 0; i < 2; i++)
+    {
+        ui_entity_t e = 
+        {
+            .type = UI_TYPE_PANEL,
+            .size = {i, i}
+        };
+        ui_id_t id = ui_add_child(&ui, NULL, &e);
+        ui_entity_t* e_ptr = ui_get_entity(&ui, &id);
+        assert(e_ptr->first_child == UI_ENTITY_ID_INVALID);
+        assert(e_ptr->parent == UI_ENTITY_ID_INVALID);
+        for (int k = 0; k < 3; k++)
+        {
+            ui_entity_t e1 = 
+            {
+                .type = UI_TYPE_PANEL,
+                .size = {k * 10 + i,  k * 10 + i}
+            };
+            ui_id_t id2 = ui_add_child(&ui, &id, &e1);
+            for (int z = 0; z < 3; z++)
+            {
+                ui_entity_t e2 = 
+                {
+                    .type = UI_TYPE_PANEL,
+                    .size = {z * 100 + k * 10 + i, z * 100 + k * 10 + i}
+                };
+                ui_add_child(&ui, &id2, &e2);
+            }
+        }
+    }
+
+    assert(ui.data.size == 3);
+
+    for (int i = 0; i < 2; i++)
+    {
+        ui_id_t id = {.idx = i, .layer = 0};
+        const ui_entity_t* e_ptr = ui_get_entity(&ui, &id);
+        int16_t next = (i + 1) % 2;
+        int16_t prev = (i - 1) % 2;
+        if (i - 1 < 0) prev = UI_ENTITY_ID_INVALID;
+        if (next == 0) next = UI_ENTITY_ID_INVALID;
+
+        assert(e_ptr->parent == UI_ENTITY_ID_INVALID);
+        assert(e_ptr->next_sibling == next);
+        assert(e_ptr->prev_sibling == prev);
+
+        int16_t child_id = e_ptr->first_child;
+        assert(child_id != UI_ENTITY_ID_INVALID);
+
+        for (int k = 0; k < 3; k++)
+        {
+            id.idx = child_id; id.layer = 1;
+            const ui_entity_t* child_ptr = ui_get_entity(&ui, &id);
+            int16_t next_id = child_ptr->next_sibling;
+            if (k == 2)
+            {
+                assert(next_id == UI_ENTITY_ID_INVALID);
+            }
+
+            int16_t child2_id = child_ptr->first_child;
+
+            for (int z = 0; z < 3; z++)
+            {
+                id.idx = child2_id; id.layer = 2;
+                const ui_entity_t* child2_ptr = ui_get_entity(&ui, &id);
+                int16_t next2_id = child2_ptr->next_sibling;
+                assert(child2_ptr->first_child == UI_ENTITY_ID_INVALID);
+                assert(child2_ptr->parent != UI_ENTITY_ID_INVALID);
+                if (z == 2)
+                {
+                    assert(next2_id == UI_ENTITY_ID_INVALID);
+                }
+                child2_id = next2_id;
+            }
+
+            child_id= next_id;
+        }
+    }
+
+    ui_free(&ui);
+    printf("test_ui_container:\tSUCCESS\n");
+}
+
 int main()
 {
     test_bitset_allocate();
@@ -322,6 +410,7 @@ int main()
     test_minheap_push_pop();
     test_hashmap_add_get();
     test_hashmap_remove();
+    test_ui_container();
 
 #ifdef TRY_TESTS
     test_knuth_mult_hash_collisions();

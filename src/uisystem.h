@@ -6,6 +6,7 @@
 typedef enum
 {
     UI_TYPE_PANEL,
+    UI_TYPE_PANEL_9_PATCH,
     UI_TYPE_BUTTON,
     UI_TYPE_LABEL,
     UI_TYPE_IMAGE,
@@ -13,6 +14,17 @@ typedef enum
 } ui_type_t;
 
 #define UI_ENTITY_ID_INVALID -1
+
+typedef struct ui_id_t
+{
+    int16_t layer;
+    int16_t idx;
+} ui_id_t;
+
+typedef struct ui_container_t
+{
+    dynarr_t data; // layered structure
+} ui_container_t;
 
 typedef struct ui_entity_t
 {
@@ -41,9 +53,22 @@ typedef struct ui_entity_t
             Color border_color;
         } panel;
 
+        struct // UI_TYPE_PANEL
+        {
+            //NPatchInfo patch;
+            int left;         
+            int top;          
+            int right;        
+            int bottom;       
+
+            texture_id_t tex_id;
+            Color tint;
+        } panel_9_patch;
+
         struct // UI_TYPE_LABEL
         {
             const char* text;
+            Color text_color;
         } label;
 
         struct
@@ -51,21 +76,20 @@ typedef struct ui_entity_t
             void * custom_ptr1;
             void * custom_ptr2;
             void (*on_click)(struct ui_entity_t*);
-            void (*on_exit)(struct ui_entity_t*);
+            void (*on_hover)(struct ui_entity_t*);
             void (*on_enter)(struct ui_entity_t*);
+            void (*on_exit)(struct ui_entity_t*);
+            int is_selected;
         } button;
+
         struct 
         {
-            texture_id_t id;
+            texture_id_t tex_id;
         } image;
     };
 } ui_entity_t;
 
-// structure 
-typedef struct ui_container_t
-{
-    dynarr_t data; // layered structure
-} ui_container_t;
+
 
 ui_container_t ui_allocate(int precreated_layers, int preallocation_per_layer)
 {
@@ -89,56 +113,94 @@ void ui_free(ui_container_t* container)
     dynarr_free(&container->data);
 }
 
-ui_entity_t* ui_add_child(ui_container_t* container, ui_entity_t* entity, ui_entity_t* child)
+ui_entity_t* ui_get_entity(ui_container_t* ui, const ui_id_t* id)
 {
-    int entity_layer_id = entity != NULL ? entity->layer : -1;
+    dynarr_t* layer = dynarr_get(&ui->data, id->layer);
+    return dynarr_get(layer, id->idx);
+}
 
-    if (entity_layer_id >=container->data.size)
+ui_id_t ui_add_child(ui_container_t* container, const ui_id_t* entity, ui_entity_t* child)
+{
+    int16_t layer_id = entity ? entity->layer + 1 : 0;
+    int16_t parent_id = entity ? entity->idx : UI_ENTITY_ID_INVALID;
+    int16_t next_sibling_id = UI_ENTITY_ID_INVALID;
+    int16_t first_child_id = UI_ENTITY_ID_INVALID;
+
+    int16_t prev_sibling_id;
+    if (layer_id >= container->data.size)
     {
-        dynarr_t new_layer = dynarr_allocate(sizeof(dynarr_t), 0, 32);
+        dynarr_t new_layer = dynarr_allocate(sizeof(ui_entity_t), 0, 32);
         dynarr_add(&container->data, &new_layer);
     }
+    dynarr_t* layer = dynarr_get(&container->data, layer_id);
+    int16_t self_id = layer->size;
 
-    dynarr_t* layer = dynarr_get(&container->data, entity_layer_id + 1);
-
-    child->first_child = UI_ENTITY_ID_INVALID;
-    child->parent = entity != NULL ? entity->self_id : UI_ENTITY_ID_INVALID;
-    child->self_id = layer->size;
-    child->next_sibling = UI_ENTITY_ID_INVALID;
-
-    if (entity == NULL)
+    // find prev sibling
+    if (entity)
     {
-        child->prev_sibling = UI_ENTITY_ID_INVALID;
-    }
-    else if (entity->first_child != UI_ENTITY_ID_INVALID)
-    {
-        ui_entity_t* sibling = dynarr_get(layer, entity->first_child);
-        while(sibling->next_sibling != UI_ENTITY_ID_INVALID)
+        ui_entity_t* e = ui_get_entity(container, entity);
+
+        prev_sibling_id = e->first_child;
+        if (prev_sibling_id != UI_ENTITY_ID_INVALID)
         {
-            sibling = dynarr_get(layer, sibling->next_sibling);
-        };
-        sibling->next_sibling = child->self_id;
-        child->prev_sibling = sibling->self_id;
+            ui_entity_t* sibling = dynarr_get(layer, prev_sibling_id);
+            while(sibling->next_sibling != UI_ENTITY_ID_INVALID)
+            {
+                sibling = dynarr_get(layer, sibling->next_sibling);
+                prev_sibling_id = sibling->self_id;
+            };
+        }
     }
     else
     {
-        child->prev_sibling = UI_ENTITY_ID_INVALID;
-        entity->first_child = child->self_id;
+        prev_sibling_id = self_id ? self_id - 1 : UI_ENTITY_ID_INVALID;
     }
+
+    // set parent data
+    if (entity)
+    {
+        ui_entity_t* e = ui_get_entity(container, entity);
+        if (e->first_child == UI_ENTITY_ID_INVALID)
+            e->first_child = self_id;
+    }
+
+    // set prev sibling data
+    if (prev_sibling_id != UI_ENTITY_ID_INVALID)
+    {
+        ui_entity_t* sibling = dynarr_get(layer, prev_sibling_id);
+        sibling->next_sibling = self_id;
+    }
+
+    // set main data
+    child->layer = layer_id;
+    child->self_id = self_id;
+    child->parent = parent_id;
+    child->next_sibling = next_sibling_id;
+    child->prev_sibling = prev_sibling_id;
+    child->first_child = first_child_id;
+ 
     dynarr_add(layer, child);
-    return dynarr_get_last(layer);
+    return (ui_id_t)
+    {
+        .idx = child->self_id,
+        .layer = child->layer
+    };
 }
 
-void ui_remove_entity(ui_container_t* container, ui_entity_t* entity)
+// TODO: need to be refactored to ui_id_t 
+/*void ui_remove_entity(ui_container_t* container, ui_entity_t* entity)
 {
+    printf("layers: %i\n", container->data.size);
     if (entity->first_child != UI_ENTITY_ID_INVALID)
     {
+        printf("ddddddd\n");
         dynarr_t* child_layer = dynarr_get(&container->data, entity->layer + 1);
         ui_entity_t* child = dynarr_get(child_layer, entity->first_child);
         int16_t child_next_id = child->next_sibling;
         ui_remove_entity(container, child);
         while(child_next_id != UI_ENTITY_ID_INVALID)
         {
+            printf("dfsdfsd\n");
             child = dynarr_get(child_layer, child_next_id);
             ui_remove_entity(container, child);
         }
@@ -147,6 +209,7 @@ void ui_remove_entity(ui_container_t* container, ui_entity_t* entity)
     int16_t entity_id = entity->self_id;
     int16_t entity_layer = entity->layer;
     int16_t entity_first_child = entity->first_child;
+    printf("get layer\n");
     dynarr_t* layer = dynarr_get(&container->data, entity_layer);
 
     if (entity->parent != UI_ENTITY_ID_INVALID)
@@ -166,6 +229,7 @@ void ui_remove_entity(ui_container_t* container, ui_entity_t* entity)
         sibling->next_sibling = entity->next_sibling;
     }
 
+    printf("get entity_id: %i %i %i \n", entity_id, entity_layer, layer->size);
     if (dynarr_remove_swap(layer, entity_id))
     {
         ui_entity_t* swaped_entity = dynarr_get(layer, entity_id);
@@ -181,11 +245,14 @@ void ui_remove_entity(ui_container_t* container, ui_entity_t* entity)
             ui_entity_t* sibling = dynarr_get(layer, swaped_entity->next_sibling);
             sibling->prev_sibling = entity_id;
         }
+        printf("get layer 2 \n");
         if (swaped_entity->prev_sibling != UI_ENTITY_ID_INVALID)
         {
             ui_entity_t* sibling = dynarr_get(layer, swaped_entity->prev_sibling);
             sibling->next_sibling = entity_id;
         }
+
+        printf("get layer 3 \n");
         if (swaped_entity->first_child != UI_ENTITY_ID_INVALID)
         {
             dynarr_t* child_layer = dynarr_get(&container->data, entity_layer + 1);
@@ -198,11 +265,17 @@ void ui_remove_entity(ui_container_t* container, ui_entity_t* entity)
             };
         }
     }
-}
+}*/
+
+
 
 void ui_process(ui_container_t* container, int screen_w, int screen_h)
 {
+    Vector2 mouse_pos_v = GetMousePosition();
+    ivec_t mouse_pos = {mouse_pos_v.x, mouse_pos_v.y};
     dynarr_t* layers = container->data.data;
+
+    // positioning of root layer
     if (layers->size > 0)
     {
         ivec_t screen_size = {screen_w, screen_h};
@@ -215,6 +288,8 @@ void ui_process(ui_container_t* container, int screen_w, int screen_h)
             e->screen_pos = ivec_add(parent_pivot, ivec_sub(e->base_pos, base_local));
         }
     }
+
+    // positioning rest of layers
     for (int i = 1; i < container->data.size; i++)
     {
         dynarr_t* layer_arr = layers + i;
@@ -232,6 +307,46 @@ void ui_process(ui_container_t* container, int screen_w, int screen_h)
                     ivec_add(parent_pivot, ivec_sub(e->base_pos, base_local)));
             
             e->is_visible = parent->is_visible;
+        }
+    }
+
+    // process button callbacks
+    for (int i = 0; i < container->data.size; i++)
+    {
+        dynarr_t* layer_arr = layers + i;
+        ui_entity_t* layer = layer_arr->data;
+        for (int entity_id = 0; entity_id < layer_arr->size; entity_id++)
+        {
+            ui_entity_t* e = &layer[entity_id];
+            
+            if (e->type != UI_TYPE_BUTTON) continue;
+            
+            ivec_t cursor_local = ivec_sub(mouse_pos, e->screen_pos);
+            int is_outside = cursor_local.x < 0 || cursor_local.y < 0 
+                    || cursor_local.x > e->size.x || cursor_local.y > e->size.y;
+        
+            if (is_outside && e->button.is_selected)
+            {
+                printf("exit\n");
+                if (e->button.on_exit) 
+                    e->button.on_exit(e);
+                e->button.is_selected = 0;
+            }
+
+            if (is_outside)
+                continue;
+
+            if (!is_outside && e->button.is_selected == 0)
+            {
+                printf("enter\n");
+                if (e->button.on_enter)
+                    e->button.on_enter(e);
+                e->button.is_selected = 1;
+            }
+            if (e->button.on_hover)
+                e->button.on_hover(e);
+            if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && e->button.on_click)
+                e->button.on_click(e);
         }
     }
 }
