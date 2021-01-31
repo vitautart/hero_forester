@@ -1,6 +1,7 @@
 #ifndef RENDER_H
 #define RENDER_H
 
+#include "effects.h"
 #include "presentation.h"
 #include "model.h"
 #include "raylib.h"
@@ -13,14 +14,14 @@ iaabb_t camera_get_map_boundaries(Camera2D camera, int screen_w, int screen_h);
 iaabb_t calculate_draw_bounds(Camera2D camera, const map_t* map, int screen_w, int screen_h, int safety_extent);
 void render_cell_with_rectangle(ivec_t pos, int has_border,
         int has_fill, int border_thickness, Color fill_color, Color border_color);
-void render(Camera2D camera, const model_t* model, const user_state_t* user_state, const dynarr_t* effects, const Texture2D *textures, const ui_container_t* ui, int screen_w, int screen_h);
+void render(Camera2D camera, const model_t* model, const user_state_t* user_state, const dynarr_t* effects, const Texture2D *textures, const ui_t* ui, int screen_w, int screen_h);
 void render_ground(const map_t * map, const Texture2D* textures, const iaabb_t* bounds);
 void render_entities(const model_t* model, const Texture2D* textures, const iaabb_t* bounds);
 void render_effects(const dynarr_t* effects, const Texture2D *textures);
 void render_ingame_ui(Camera2D camera, const model_t* model, const user_state_t* user_state);
 void render_cell_under_cursor(Camera2D camera, const model_t* model,
         const user_state_t* user_state);
-void render_ui(const ui_container_t* container, const Texture2D* textures);
+void render_ui(const ui_t* container, const Texture2D* textures);
 
 #ifdef DEBUG_RENDER
 void render_debug_cells(const map_t * map)
@@ -105,7 +106,7 @@ iaabb_t calculate_draw_bounds(Camera2D camera, const map_t* map, int screen_w, i
     return bounds;
 }
 
-void render(Camera2D camera, const model_t* model, const user_state_t* user_state, const dynarr_t* effects, const Texture2D *textures, const ui_container_t* ui, int screen_w, int screen_h)
+void render(Camera2D camera, const model_t* model, const user_state_t* user_state, const dynarr_t* effects, const Texture2D *textures, const ui_t* ui, int screen_w, int screen_h)
 {
     iaabb_t bounds = calculate_draw_bounds(camera, &model->map, screen_w, screen_h, 2);
     BeginDrawing();
@@ -168,12 +169,28 @@ void render_effects(const dynarr_t* effects, const Texture2D* textures)
 {   
     if (effects->size == 0) return;
 
-    effect_t* effect = dynarr_get(effects, 0);
+    effect_t* effect = effects->data;
 
     for (int i = 0; i < effects->size; i++)
     {
-        Vector2 pos = map_to_world_lu_offset(effect->pos); 
-        DrawTextureV(textures[effect->texture_id], pos, WHITE);
+        switch (effect->type)
+        {
+            case EFFECT_TYPE_SPLASH : 
+                {
+                    Vector2 pos = map_to_world_lu_offset(effect->splash.pos); 
+                    DrawTextureV(textures[effect->splash.texture_id], pos, WHITE);
+                    break;
+                }
+            case EFFECT_TYPE_PROJECTILE: 
+                {
+                    Vector2 start = map_to_world_c_offset(effect->projectile.start); 
+                    Vector2 end = map_to_world_c_offset(effect->projectile.end);
+                    Vector2 dir = Vector2Normalize(Vector2Subtract(end, start));
+                    start = Vector2Add(start, Vector2Scale(dir, 16));
+                    DrawLineEx(start, end, 1, RED);
+                    break;
+                }
+        }
         effect++;
     }
 }
@@ -184,7 +201,7 @@ void render_ingame_ui(Camera2D camera, const model_t* model, const user_state_t*
 }
 
 // TODO: can be added camera culling
-void render_ui(const ui_container_t* ui, const Texture2D* textures)
+void render_ui(const ui_t* ui, const Texture2D* textures)
 {
     //DrawText("HERO FORESTER", 10, 10, 20, WHITE);
     const dynarr_t* layers = ui->data.data;
@@ -205,11 +222,12 @@ void render_ui(const ui_container_t* ui, const Texture2D* textures)
                 .width = e->size.x,
                 .height = e->size.y
             };
+
             switch (e->type)
             {
                 case UI_TYPE_PANEL:
                     {
-                        DrawRectangleRec(r, e->panel.backgroud_color);
+                        DrawRectangleRec(r, e->panel.background_color);
                         if (e->panel.has_borders) 
                             DrawRectangleLinesEx(r, 1, e->panel.border_color);
                         break;

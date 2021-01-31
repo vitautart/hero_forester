@@ -9,144 +9,30 @@
 #include "render.h"
 #include "simulation.h"
 #include "sync_camera.h"
+#include "uisystem.h"
 #include "useractions.h"
 
 //#define OLDSIMULATION
 
-void on_enter_test(ui_entity_t* button)
-{
-    ui_container_t* ui = button->button.custom_ptr1;
-    ui_id_t panel_id = {.idx = button->parent, .layer = button->layer - 1};
-    ui_entity_t* panel = ui_get_entity(ui, &panel_id);
-    panel->panel.backgroud_color = GREEN;
-}
-
-void on_exit_test(ui_entity_t* button)
-{
-    ui_container_t* ui = button->button.custom_ptr1;
-    ui_id_t panel_id = {.idx = button->parent, .layer = button->layer - 1};
-    ui_entity_t* panel = ui_get_entity(ui, &panel_id);
-    panel->panel.backgroud_color = WHITE;
-}
-
-void on_click_test(ui_entity_t* button)
-{
-    ui_container_t* ui = button->button.custom_ptr1;
-    ui_id_t panel_id = {.idx = button->parent, .layer = button->layer - 1};
-    ui_entity_t* panel = ui_get_entity(ui, &panel_id);
-    panel->panel.border_color = RED;
-}
-
 int main (void)
 {
+    int screen_w = 800;
+    int screen_h = 600;
+    // Must be first before call any raylib functions
+    InitWindow(screen_w, screen_h, "HERO FORESTER");
+
     Camera2D camera = 
     {
         .rotation = 0.0f,
         .zoom = 2.0f
     };
-    int screen_w = 800;
-    int screen_h = 600;
     model_t model;
     user_state_t user_state = {.command_mode = MOVE_USER_MODE};
-    ui_container_t ui = ui_allocate(8, 32);
-
-    const char* text = "Test text";
-    // TESTING
-    {
-        ui_entity_t p = 
-        {
-            .base_align = {1, 0},
-            .base_pos = {-20, 20},
-            .size = {200, 200},
-            .is_visible = 1,
-            .type = UI_TYPE_PANEL,
-            .parent_align = {1, 0},
-            .panel = 
-            {
-                .has_borders = 1,
-                .backgroud_color = {255, 255, 255, 255},
-                .border_color = {0, 125, 0, 255}
-            }
-        };
-        ui_entity_t p_child = 
-        {
-            .base_align = {1, 1},
-            .base_pos = {-10, -10},
-            .size = {30, 30},
-            .is_visible = 1,
-            .type = UI_TYPE_PANEL,
-            .parent_align = {1, 1},
-            .panel = 
-            {
-                .has_borders = 1,
-                .backgroud_color = {125, 125, 125, 255},
-                .border_color = {0, 125, 255, 255}
-            }
-        };
-        ui_entity_t p_child_button = 
-        {
-            .base_align = {0, 0},
-            .base_pos = {0, 0},
-            .size = {30, 30},
-            .is_visible = 1,
-            .type = UI_TYPE_BUTTON,
-            .parent_align = {0, 0},
-            .button = 
-            {
-                .custom_ptr1 = &ui,
-                .custom_ptr2 = NULL,
-                .on_click = on_click_test,
-                .on_enter = on_enter_test,
-                .on_exit = on_exit_test,
-                .on_hover = NULL,
-                .is_selected = 0
-            }
-        };
-
-        ui_entity_t p_child_label = 
-        {
-            .base_align = {0, 0},
-            .base_pos = {10, 10},
-            .size = {30, 30},
-            .is_visible = 1,
-            .type = UI_TYPE_LABEL,
-            .parent_align = {0, 0},
-            .label = 
-            {
-                .text = text,
-                .text_color = {255, 255, 255, 255},
-            }
-        };
-
-        ui_entity_t p_child_9patch = 
-        {
-            .base_align = {0, 0},
-            .base_pos = {10, 10},
-            .size = {120, 50},
-            .is_visible = 1,
-            .type = UI_TYPE_PANEL_9_PATCH,
-            .parent_align = {0, 0},
-            .panel_9_patch = 
-            {
-                .left = 5,
-                .top = 5,
-                .right = 5,
-                .bottom = 5,
-                .tex_id = TEXTURE_ID_BUTTON_1,
-                .tint = WHITE,
-            }
-        };
-
-        ui_id_t root = ui_add_child(&ui, NULL, &p);
-        ui_add_child(&ui, &root, &p_child_9patch);
-        //ui_add_child(&ui, &root, &p_child_label);
-        //ui_id_t button_panel = ui_add_child(&ui, &root, &p_child);
-        //ui_add_child(&ui, &button_panel, &p_child_button);
-    }
+    ui_t ui = ui_allocate(8, 32);
+    ui_id_t menu_id = ui_add_main_menu(&ui, NULL);
 
     dynarr_t effects = dynarr_allocate(sizeof(effect_t), 0, 32);
     dynarr_t effect_emmiters = dynarr_allocate(sizeof(effect_emmiter_t), 0, 32);
-    InitWindow(screen_w, screen_h, "HERO FORESTER");
 
     globals_allocate_per_session();
     Texture2D* textures = load_textures();

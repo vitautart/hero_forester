@@ -7,20 +7,39 @@
 
 typedef enum
 {
-    EFFECT_TYPE_SHOOT,
+    EMITTER_TYPE_SHOOT,
+} emitter_type_t;
+
+typedef enum
+{
+    EFFECT_TYPE_SPLASH,
+    EFFECT_TYPE_PROJECTILE
 } effect_type_t;
 
 typedef struct effect_emmiter_t
 {
-    effect_type_t type;
+    emitter_type_t type;
     ivec_t pos[3];
 } effect_emmiter_t;
 
 typedef struct effect_t
 {
-    ivec_t pos;
-    uint16_t texture_id;
+    effect_type_t type;
     int lifetime;
+    union
+    {
+        struct // EFFECT_TYPE_SPLASH
+        {
+            ivec_t pos;
+            uint16_t texture_id;
+        } splash;
+        struct // EFFECT_TYPE_PROJECTILE
+        {
+            ivec_t start;
+            ivec_t end;
+        } projectile;
+    };
+
 } effect_t;
 
 #endif // EFFECTS_H

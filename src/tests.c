@@ -1,5 +1,6 @@
 #include "common.h"
-#include "uisystem.h"
+#include "raylib.h"
+#include "uilib.h"
 
 #include <assert.h>
 #include <stdio.h>
@@ -8,6 +9,20 @@
 #include <string.h>
 
 //#define TRY_TESTS
+
+// TODO: complete
+void test_ivec_operations()
+{
+    ivec_t i = {120, 60};
+    Vector2 v = {0.5, 0.5};
+
+    ivec_t res = ivec_mul_v2(i, v);
+
+    assert(res.x == 60);
+    assert(res.y == 30);
+
+    printf("test_ivec_operations:\tSUCCESS\n");
+}
 
 void test_bitset_allocate()
 {
@@ -314,7 +329,7 @@ void test_knuth_mult_hash_collisions()
 
 void test_ui_container()
 {
-    ui_container_t ui = ui_allocate(2, 1);
+    ui_t ui = ui_allocate(2, 1);
 
     for (int i = 0; i < 2; i++)
     {
@@ -401,6 +416,7 @@ void test_ui_container()
 
 int main()
 {
+    test_ivec_operations();
     test_bitset_allocate();
     test_bitset_get_set();
     test_dynarr_full();

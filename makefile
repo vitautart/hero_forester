@@ -39,5 +39,5 @@ external_clean:
 	cd external/raylib/src && $(MAKE) clean
 
 tests:
-	$(CC) src/tests.c $(INCLUDE_PATHS) src/common.c -lm -o build/tests
+	$(CC) src/tests.c src/common.c $(INCLUDE_PATHS) $(LDFLAGS) $(LDLIBS) -o build/tests
 	./build/tests

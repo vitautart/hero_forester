@@ -200,7 +200,7 @@ entity_t do_action(model_t* model, const action_t* action, dynarr_t* effect_emmi
         {
             effect_emmiter_t emmiter = 
             {
-                .type = EFFECT_TYPE_SHOOT,
+                .type = EMITTER_TYPE_SHOOT,
                 .pos = {start, end}
             };
             dynarr_add(effect_emmiters, &emmiter);

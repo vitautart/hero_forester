@@ -45,14 +45,30 @@ ivec_t map_get_mouse_pos(Camera2D camera)
 
 void emmiter_to_effects_type_shoot(const effect_emmiter_t* emmiter, dynarr_t* effects)
 {
-    effect_t effect = 
+    effect_t effect_splash = 
     {
-        .pos = emmiter->pos[1],
+        .type = EFFECT_TYPE_SPLASH,
         .lifetime = 8,
-        .texture_id = TEXTURE_ID_EFFECT_1 
+        .splash = 
+        {
+            .pos = emmiter->pos[1],
+            .texture_id = TEXTURE_ID_EFFECT_1 
+        }
     };
 
-    dynarr_add(effects, &effect);
+    effect_t effect_proj = 
+    {
+        .type = EFFECT_TYPE_PROJECTILE,
+        .lifetime = 8,
+        .projectile = 
+        {
+            .start = emmiter->pos[0],
+            .end = emmiter->pos[1]
+        }
+    };
+
+    dynarr_add(effects, &effect_splash);
+    dynarr_add(effects, &effect_proj);
 }
 
 void mutate_data_for_renderer (dynarr_t* effects)
@@ -93,7 +109,7 @@ void convert_data_for_renderer(dynarr_t* effect_emmiters, dynarr_t* effects)
     {
         switch(emmiters_ptr->type)
         {
-            case EFFECT_TYPE_SHOOT:
+            case EMITTER_TYPE_SHOOT:
             {
                 emmiter_to_effects_type_shoot(emmiters_ptr, effects);
                 break;
