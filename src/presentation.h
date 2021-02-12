@@ -4,6 +4,7 @@
 #include "globals.h"
 #include "common.h"
 #include "effects.h"
+#include "model.h"
 
 #include <raylib.h>
 
@@ -71,7 +72,7 @@ void emmiter_to_effects_type_shoot(const effect_emmiter_t* emmiter, dynarr_t* ef
     dynarr_add(effects, &effect_proj);
 }
 
-void mutate_data_for_renderer (dynarr_t* effects)
+void present_mutate_for_renderer (dynarr_t* effects)
 {
     if (effects->size == 0) return;
 
@@ -99,7 +100,7 @@ void mutate_data_for_renderer (dynarr_t* effects)
     }
 }
 
-void convert_data_for_renderer(dynarr_t* effect_emmiters, dynarr_t* effects)
+void present_convert_for_renderer(dynarr_t* effect_emmiters, dynarr_t* effects)
 {
     if (effect_emmiters->size == 0) return;
 
@@ -120,6 +121,21 @@ void convert_data_for_renderer(dynarr_t* effect_emmiters, dynarr_t* effects)
     }
 
     dynarr_clear(effect_emmiters);
+}
+
+void present_sync_camera(Camera2D* camera, const model_t* model, int screen_w, int screen_h)
+{
+    ent_player_t* player = GET_PLAYER(model);
+
+    ivec_t pos = map_get_pos(&model->map, player->mapid);
+
+    Vector2 left_up_world = GetScreenToWorld2D((Vector2){0,0}, *camera);
+    Vector2 right_bottom_world = GetScreenToWorld2D((Vector2){screen_w,screen_h}, *camera);
+    Vector2 world_camera_delta = Vector2Subtract(right_bottom_world, left_up_world);
+    Vector2 world_camera_delta_half = Vector2Scale(world_camera_delta, 0.5f); 
+
+    camera->target = map_to_world_c_offset(pos);
+    camera->offset = Vector2Scale(world_camera_delta_half, camera->zoom);
 }
 
 #endif // PRESENTATION_H

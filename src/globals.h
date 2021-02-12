@@ -10,6 +10,12 @@
 #define MASK_BIT_DIR_RIGHT  0b0100
 #define MASK_BIT_DIR_DOWN   0b1000
 
+typedef enum scene_type_t
+{
+    SCENE_TYPE_MAIN_MENU,
+    SCENE_TYPE_LOCATION
+} scene_type_t;
+
 typedef enum
 {
     MASK_DIR_LU = MASK_BIT_DIR_LEFT | MASK_BIT_DIR_UP,
@@ -86,7 +92,7 @@ typedef enum
 static texture_id_t global_tex_id_right_to_left_mapping[TEXTURE_ID_MAX_VALUE];
 static texture_id_t global_tex_id_left_to_right_mapping[TEXTURE_ID_MAX_VALUE];
 
-#define DEBUG_RENDER
+//#define DEBUG_RENDER
 // GLOBAL CONTAINERS
 static minheap_t global_open_set;
 static hashmap_t global_path_links;

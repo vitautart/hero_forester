@@ -8,7 +8,7 @@
 #include <raylib.h>
 #include <raymath.h>
 
-typedef enum
+/*typedef enum
 {
     AUTO_MOVE_SHOOT_USER_MODE,
     MOVE_USER_MODE,
@@ -20,7 +20,7 @@ typedef enum
 typedef struct user_state_t
 {
     user_command_mode_t command_mode;
-} user_state_t;
+} user_state_t;*/
 
 typedef enum
 {

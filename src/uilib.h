@@ -36,7 +36,8 @@ typedef struct ui_entity_t
     ivec_t size; // vector of size thjat goes from screen_pos to right bottom corner
     Vector2 base_align; // 0 to 1
     Vector2 parent_align; // 0 to 1
-    int is_visible;
+    int16_t is_visible;
+    int16_t is_mouse_shadowing;
     
     ui_type_t type;
 
@@ -190,11 +191,13 @@ ui_id_t ui_add_child(ui_t* container, const ui_id_t* entity, ui_entity_t* child)
     };
 }
 
-void ui_process(ui_t* container, int screen_w, int screen_h)
+int ui_process(ui_t* container, int screen_w, int screen_h)
 {
     Vector2 mouse_pos_v = GetMousePosition();
     ivec_t mouse_pos = {mouse_pos_v.x, mouse_pos_v.y};
     dynarr_t* layers = container->data.data;
+
+    int is_mouse_over_ui = 0;
 
     // positioning of root layer
     if (layers->size > 0)
@@ -231,7 +234,7 @@ void ui_process(ui_t* container, int screen_w, int screen_h)
         }
     }
 
-    // process button callbacks
+    // process mouse hovering and button callbacks
     for (int i = 0; i < container->data.size; i++)
     {
         dynarr_t* layer_arr = layers + i;
@@ -240,12 +243,16 @@ void ui_process(ui_t* container, int screen_w, int screen_h)
         {
             ui_entity_t* e = &layer[entity_id];
             
-            if (e->type != UI_TYPE_BUTTON) continue;
-            
+            if (e->is_visible == 0) continue;
+
             ivec_t cursor_local = ivec_sub(mouse_pos, e->screen_pos);
             int is_outside = cursor_local.x < 0 || cursor_local.y < 0 
                     || cursor_local.x > e->size.x || cursor_local.y > e->size.y;
-        
+                   
+            is_mouse_over_ui |= !is_outside && e->is_mouse_shadowing;
+
+            if (e->type != UI_TYPE_BUTTON) continue;
+            
             if (is_outside && e->button.is_selected)
             {
                 if (e->button.on_exit) 
@@ -268,6 +275,8 @@ void ui_process(ui_t* container, int screen_w, int screen_h)
                 e->button.on_click(e);
         }
     }
+
+    return is_mouse_over_ui;
 }
 
 #endif // UI_LIB_H

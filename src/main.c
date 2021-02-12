@@ -8,7 +8,6 @@
 #include "model.h"
 #include "render.h"
 #include "simulation.h"
-#include "sync_camera.h"
 #include "uisystem.h"
 #include "useractions.h"
 
@@ -27,7 +26,7 @@ int main (void)
         .zoom = 2.0f
     };
     model_t model;
-    user_state_t user_state = {.command_mode = MOVE_USER_MODE};
+    scene_type_t scene_type = SCENE_TYPE_LOCATION;
     ui_t ui = ui_allocate(8, 32);
     ui_id_t menu_id = ui_add_main_menu(&ui, NULL);
 
@@ -45,23 +44,29 @@ int main (void)
     SetTargetFPS(60);
     while(!WindowShouldClose())
     {    
-        // TODO:    hardcoded default value for player active mode MOVE_USER_MODE is not OK.
-        //          we must change this to some active tool in user ui that corresponds to certain user mode.
-        user_state.command_mode = current_entity.type != PLAYER_ENTITY ? 
-            WAIT_FOR_OTHERS_USER_MODE : MOVE_USER_MODE;
+        int mouse_over_map = !ui_process(&ui, screen_w, screen_h);
 
-        current_action = current_entity.type == PLAYER_ENTITY ? 
-            produce_user_action(&model, current_entity, &user_state, camera)
-            : produce_ai_action(&model, current_entity); 
+        if (scene_type == SCENE_TYPE_LOCATION )
+        {
+            current_action = current_entity.type == PLAYER_ENTITY ? 
+                produce_user_action(&model, current_entity, camera, mouse_over_map) :
+                produce_ai_action(&model, current_entity); 
+        }
 
-        ui_process(&ui, screen_w, screen_h);
-        current_entity = do_action(&model, &current_action, &effect_emmiters);
-        convert_data_for_renderer(&effect_emmiters, &effects);
 
-        sync_camera(&camera, &model, screen_w, screen_h);
+        if (scene_type == SCENE_TYPE_LOCATION)
+        {
+            current_entity = do_action(&model, &current_action, &effect_emmiters);
+            present_convert_for_renderer(&effect_emmiters, &effects);
+            present_sync_camera(&camera, &model, screen_w, screen_h);
+        }
 
-        render(camera, &model, &user_state, &effects, textures, &ui, screen_w, screen_h);
-        mutate_data_for_renderer(&effects);
+        render(&camera, &model, scene_type, &effects, textures, &ui, screen_w, screen_h);
+
+        if (scene_type == SCENE_TYPE_LOCATION)
+        {
+            present_mutate_for_renderer(&effects);
+        }
     }
 
     ui_free(&ui);

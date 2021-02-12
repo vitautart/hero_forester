@@ -2,6 +2,7 @@
 #define RENDER_H
 
 #include "effects.h"
+#include "globals.h"
 #include "presentation.h"
 #include "model.h"
 #include "raylib.h"
@@ -14,13 +15,13 @@ iaabb_t camera_get_map_boundaries(Camera2D camera, int screen_w, int screen_h);
 iaabb_t calculate_draw_bounds(Camera2D camera, const map_t* map, int screen_w, int screen_h, int safety_extent);
 void render_cell_with_rectangle(ivec_t pos, int has_border,
         int has_fill, int border_thickness, Color fill_color, Color border_color);
-void render(Camera2D camera, const model_t* model, const user_state_t* user_state, const dynarr_t* effects, const Texture2D *textures, const ui_t* ui, int screen_w, int screen_h);
+void render(const Camera2D* camera, const model_t* model, const scene_type_t scene, /*const user_state_t* user_state,*/ const dynarr_t* effects, const Texture2D *textures, const ui_t* ui, int screen_w, int screen_h);
 void render_ground(const map_t * map, const Texture2D* textures, const iaabb_t* bounds);
 void render_entities(const model_t* model, const Texture2D* textures, const iaabb_t* bounds);
 void render_effects(const dynarr_t* effects, const Texture2D *textures);
-void render_ingame_ui(Camera2D camera, const model_t* model, const user_state_t* user_state);
-void render_cell_under_cursor(Camera2D camera, const model_t* model,
-        const user_state_t* user_state);
+void render_ingame_ui(Camera2D camera, const model_t* model/*, const user_state_t* user_state*/);
+void render_cell_under_cursor(Camera2D camera, const model_t* model/*,
+        const user_state_t* user_state*/);
 void render_ui(const ui_t* container, const Texture2D* textures);
 
 #ifdef DEBUG_RENDER
@@ -66,11 +67,11 @@ void render_cell_with_rectangle(ivec_t pos, int has_border,
     if (has_border) DrawRectangleLinesEx(rect, border_thickness, border_color);
 }
 
-void render_cell_under_cursor(Camera2D camera, const model_t* model,
-        const user_state_t* user_state)
+void render_cell_under_cursor(Camera2D camera, const model_t* model/*,
+        const user_state_t* user_state*/)
 {
     ivec_t pos = map_get_mouse_pos(camera);
-    if (user_state->command_mode == MOVE_USER_MODE)
+    //if (user_state->command_mode == MOVE_USER_MODE)
     {
         int map_idx = map_get_idx(&model->map, pos);
         Color color = { .r = 0, .g = 0, .b = 0, .a = 100 };
@@ -106,22 +107,23 @@ iaabb_t calculate_draw_bounds(Camera2D camera, const map_t* map, int screen_w, i
     return bounds;
 }
 
-void render(Camera2D camera, const model_t* model, const user_state_t* user_state, const dynarr_t* effects, const Texture2D *textures, const ui_t* ui, int screen_w, int screen_h)
+void render(const Camera2D* camera, const model_t* model, const scene_type_t scene_type, /*const user_state_t* user_state,*/ const dynarr_t* effects, const Texture2D *textures, const ui_t* ui, int screen_w, int screen_h)
 {
-    iaabb_t bounds = calculate_draw_bounds(camera, &model->map, screen_w, screen_h, 2);
     BeginDrawing();
     ClearBackground((Color){ .r = 0, .g = 0, .b = 0, .a = 255 });
-    
-    BeginMode2D(camera);
-    render_ground(&model->map, textures, &bounds);
-    render_entities(model, textures, &bounds);
-    render_effects(effects, textures);
-    render_ingame_ui(camera, model, user_state);
+    if (scene_type == SCENE_TYPE_LOCATION)
+    {
+        BeginMode2D(*camera);
+        iaabb_t bounds = calculate_draw_bounds(*camera, &model->map, screen_w, screen_h, 2);
+        render_ground(&model->map, textures, &bounds);
+        render_entities(model, textures, &bounds);
+        render_effects(effects, textures);
+        render_ingame_ui(*camera, model/*, user_state*/);
 #ifdef DEBUG_RENDER
-    render_debug_cells(&model->map);
+        render_debug_cells(&model->map);
 #endif
-    EndMode2D();
-
+        EndMode2D();
+    }
     render_ui(ui, textures);
 
     EndDrawing();
@@ -175,7 +177,7 @@ void render_effects(const dynarr_t* effects, const Texture2D* textures)
     {
         switch (effect->type)
         {
-            case EFFECT_TYPE_SPLASH : 
+            case EFFECT_TYPE_SPLASH: 
                 {
                     Vector2 pos = map_to_world_lu_offset(effect->splash.pos); 
                     DrawTextureV(textures[effect->splash.texture_id], pos, WHITE);
@@ -195,9 +197,9 @@ void render_effects(const dynarr_t* effects, const Texture2D* textures)
     }
 }
 
-void render_ingame_ui(Camera2D camera, const model_t* model, const user_state_t* user_state)
+void render_ingame_ui(Camera2D camera, const model_t* model/*, const user_state_t* user_state*/)
 {
-    render_cell_under_cursor(camera, model, user_state);
+    render_cell_under_cursor(camera, model/*, user_state*/);
 }
 
 // TODO: can be added camera culling

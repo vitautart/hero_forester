@@ -5,12 +5,11 @@
 #include "simulation.h"
 #include "presentation.h"
 
-action_t produce_user_action(model_t* model, entity_t entity, user_state_t* user_state, Camera2D camera)
+action_t produce_user_action(model_t* model, entity_t entity, Camera2D camera, int mouse_over_map)
 {
     ent_player_t* player = GET_PLAYER(model);
 
-    if (user_state->command_mode == AUTO_MOVE_SHOOT_USER_MODE 
-        || user_state->command_mode == MOVE_USER_MODE)
+    if (mouse_over_map)
     {
         if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
         {
