@@ -13,6 +13,7 @@ typedef struct ui_system_t
     int is_mouse_over_map;
 } ui_system_t;
 
+// TODO: need to be finished
 void ui_default_on_enter(ui_entity_t* button)
 {
     ui_t* ui = button->button.custom_ptr1;
