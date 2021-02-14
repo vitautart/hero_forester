@@ -16,6 +16,11 @@ typedef enum scene_type_t
     SCENE_TYPE_LOCATION
 } scene_type_t;
 
+typedef struct app_state_t
+{
+    scene_type_t current_scene;
+} app_state_t;
+
 typedef enum
 {
     MASK_DIR_LU = MASK_BIT_DIR_LEFT | MASK_BIT_DIR_UP,

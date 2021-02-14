@@ -2,7 +2,16 @@
 #define UI_SYSTEM_H
 
 #include "common.h"
+#include "globals.h"
 #include <uilib.h>
+
+typedef struct ui_system_t
+{
+    ui_t ui;
+    ui_id_t main_menu_id;
+    ui_id_t bottom_panel_id;
+    int is_mouse_over_map;
+} ui_system_t;
 
 void ui_default_on_enter(ui_entity_t* button)
 {
@@ -18,6 +27,15 @@ void ui_default_on_exit(ui_entity_t* button)
     ui_id_t panel_id = {.idx = button->parent, .layer = button->layer - 1};
     ui_entity_t* panel = ui_get_entity(ui, &panel_id);
     panel->panel_9_patch.tint = WHITE;
+}
+
+void ui_new_button_on_click(ui_entity_t* button)
+{
+    ui_entity_t* main_menu = button->button.custom_ptr1;
+    scene_type_t* scene_type = button->button.custom_ptr2;
+
+    main_menu->is_visible = 0;
+    *scene_type = SCENE_TYPE_LOCATION;
 }
 
 ui_id_t ui_add_child_text_button(ui_t* ui, ui_id_t* entity, const char* text,
@@ -127,6 +145,61 @@ ui_id_t ui_add_main_menu(ui_t* ui, ui_id_t* entity)
             (Vector2){0.5, 4.5 * height_inc}, NULL);
 
     return menu;
+}
+
+// TODO: need to be finished
+ui_id_t ui_add_ingame_bottom_panel(ui_t* ui, ui_id_t* entity)
+{   
+    ivec_t panel_size = {32, 32};
+    ivec_t button_size = {panel_size.x - 20, 40};
+    //float height_inc = 1.0 / 5.0;
+    ivec_t button_base_pos = IVEC_ZERO;
+    ui_entity_t panel = 
+    {
+        .base_align = {0, 0.5},
+        .base_pos = {20, 0},
+        .size = panel_size,
+        .is_visible = 1,
+        .is_mouse_shadowing = 1,
+        .type = UI_TYPE_PANEL_9_PATCH,
+        .parent_align = {0, 0.5},
+        .panel_9_patch = 
+        {
+            .left = 5,
+            .top = 5,
+            .right = 5,
+            .bottom = 5,
+            .tex_id = TEXTURE_ID_BUTTON_1,
+            .tint = WHITE,
+        }
+    };
+
+    ui_id_t panel_id = ui_add_child(ui, NULL, &panel);
+
+    return panel_id;
+}
+
+// TODO: need to be finished
+void ui_adjust_sizes(ui_system_t* ui_sys, int screen_w, int screen_h)
+{
+}
+// TODO: need to be finished
+void ui_init_system(ui_system_t* ui_sys)
+{
+    ui_sys->ui = ui_allocate(8, 32);
+    ui_sys->main_menu_id = ui_add_main_menu(&ui_sys->ui, NULL);
+    //ui_sys0>bottom_panel_id = ui_add_ingame_bottom_panel(&ui_sys->ui, NULL);
+}
+
+void ui_process_system(ui_system_t* ui_sys, app_state_t* app_state, int screen_w, int screen_h)
+{
+    ui_adjust_sizes(ui_sys, screen_w, screen_h);
+    ui_sys->is_mouse_over_map = !ui_process(&ui_sys->ui, screen_w, screen_h);
+}
+
+void ui_destroy_system(ui_system_t* ui_sys)
+{
+    ui_free(&ui_sys->ui);
 }
 
 #endif // UI_SYSTEM_H
