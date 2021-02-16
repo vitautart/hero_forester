@@ -3,6 +3,7 @@
 
 #include "common.h"
 #include "globals.h"
+#include "raylib.h"
 #include <uilib.h>
 
 typedef struct ui_system_t
@@ -103,6 +104,71 @@ ui_id_t ui_add_child_text_button(ui_t* ui, ui_id_t* entity, const char* text,
     ui_id_t panel_id = ui_add_child(ui, entity, &panel);
     ui_add_child(ui, &panel_id, &button);
     ui_add_child(ui, &panel_id, &label);
+
+    return panel_id;
+}
+
+ui_id_t ui_add_child_image_button(ui_t* ui, ui_id_t* entity, texture_id_t tex_id,
+        ivec_t size, ivec_t base_pos, Vector2 base_align, Vector2 parent_align, button_cb on_click)
+{
+    ui_entity_t panel = 
+    {
+        .base_align = base_align,
+        .base_pos = base_pos,
+        .size = size,
+        .is_visible = 1,
+        .is_mouse_shadowing = 1,
+        .type = UI_TYPE_PANEL_9_PATCH,
+        .parent_align = parent_align,
+        .panel_9_patch = 
+        {
+            .left = 5,
+            .top = 5,
+            .right = 5,
+            .bottom = 5,
+            .tex_id = TEXTURE_ID_BUTTON_1,
+            .tint = WHITE,
+        }
+    };
+    ui_entity_t button = 
+    {
+        .base_align = {0, 0},
+        .base_pos = {0, 0},
+        .size = size,
+        .is_visible = 1,
+        .is_mouse_shadowing = 1,
+        .type = UI_TYPE_BUTTON,
+        .parent_align = {0, 0},
+        .button = 
+        {
+            .custom_ptr1 = ui,
+            .custom_ptr2 = NULL,
+            .on_click = on_click,
+            .on_enter = ui_default_on_enter,
+            .on_exit = ui_default_on_exit,
+            .on_hover = NULL,
+            .is_selected = 0
+        }
+    };
+
+    ui_entity_t image = 
+    {
+        .base_align = {0.5, 0.5},
+        .base_pos = {0, 0},
+        .size = size,
+        .is_visible = 1,
+        .is_mouse_shadowing = 1,
+        .type = UI_TYPE_LABEL,
+        .parent_align = {0.5, 0.5},
+        .image = 
+        {
+            .tex_id = tex_id
+        }
+    };
+
+    ui_id_t panel_id = ui_add_child(ui, entity, &panel);
+    ui_add_child(ui, &panel_id, &button);
+    ui_add_child(ui, &panel_id, &image);
 
     return panel_id;
 }
